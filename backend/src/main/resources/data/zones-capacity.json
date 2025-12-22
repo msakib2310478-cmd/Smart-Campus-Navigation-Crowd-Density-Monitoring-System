@@ -1,0 +1,82 @@
+[
+  {
+    "id": "library-main",
+    "name": "Main Library",
+    "capacity": 200,
+    "location": {
+      "lat": 40.7128,
+      "lng": -74.0060
+    },
+    "type": "library"
+  },
+  {
+    "id": "cafeteria-north",
+    "name": "North Cafeteria",
+    "capacity": 150,
+    "location": {
+      "lat": 40.7138,
+      "lng": -74.0070
+    },
+    "type": "cafeteria"
+  },
+  {
+    "id": "cafeteria-south",
+    "name": "South Cafeteria",
+    "capacity": 120,
+    "location": {
+      "lat": 40.7118,
+      "lng": -74.0050
+    },
+    "type": "cafeteria"
+  },
+  {
+    "id": "lab-cs",
+    "name": "Computer Science Lab",
+    "capacity": 80,
+    "location": {
+      "lat": 40.7135,
+      "lng": -74.0065
+    },
+    "type": "lab"
+  },
+  {
+    "id": "lab-physics",
+    "name": "Physics Lab",
+    "capacity": 60,
+    "location": {
+      "lat": 40.7125,
+      "lng": -74.0055
+    },
+    "type": "lab"
+  },
+  {
+    "id": "gym",
+    "name": "Student Gym",
+    "capacity": 100,
+    "location": {
+      "lat": 40.7140,
+      "lng": -74.0075
+    },
+    "type": "gym"
+  },
+  {
+    "id": "auditorium",
+    "name": "Main Auditorium",
+    "capacity": 300,
+    "location": {
+      "lat": 40.7130,
+      "lng": -74.0058
+    },
+    "type": "auditorium"
+  },
+  {
+    "id": "study-room-1",
+    "name": "Study Room A",
+    "capacity": 30,
+    "location": {
+      "lat": 40.7132,
+      "lng": -74.0062
+    },
+    "type": "study-room"
+  }
+]
