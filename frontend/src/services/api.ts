@@ -1,4 +1,4 @@
-import axios from 'axios';
+import axios, { AxiosError } from 'axios';
 import { AuthResponse, Zone, LocationUpdate } from '../types';
 
 const API_BASE_URL = 'http://localhost:8080/api';
@@ -11,20 +11,62 @@ const api = axios.create({
 });
 
 // Add token to requests
-api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+api.interceptors.request.use(
+  (config) => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
   }
-  return config;
-});
+);
+
+// Handle response errors
+api.interceptors.response.use(
+  (response) => response,
+  (error: AxiosError) => {
+    if (error.response) {
+      // Server responded with error status
+      const status = error.response.status;
+      
+      if (status === 401) {
+        // Unauthorized - clear auth data and redirect to login
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+        
+        // Only redirect if not already on login/signup page
+        if (!window.location.pathname.includes('/login') && 
+            !window.location.pathname.includes('/signup')) {
+          window.location.href = '/login';
+        }
+      } else if (status === 403) {
+        console.error('Access forbidden');
+      } else if (status === 429) {
+        // Too many requests - rate limited
+        console.error('Too many requests. Please try again later.');
+      } else if (status >= 500) {
+        console.error('Server error. Please try again later.');
+      }
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('Network error. Please check your connection.');
+    }
+    
+    return Promise.reject(error);
+  }
+);
 
 // Auth APIs
 export const authAPI = {
-  signup: (email: string, studentId: string, password: string, fullName: string) =>
+  signup: (email: string | null, studentId: string | null, password: string, fullName: string) =>
     api.post<AuthResponse>('/auth/signup', { email, studentId, password, fullName }),
   login: (email: string, studentId: string, password: string) =>
     api.post<AuthResponse>('/auth/login', { email, studentId, password }),
+  getCurrentUser: () =>
+    api.get('/auth/me'),
 };
 
 // Location APIs
