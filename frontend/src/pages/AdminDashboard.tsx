@@ -8,7 +8,6 @@ export default function AdminDashboard() {
   const [zoneCounts, setZoneCounts] = useState<Record<string, number>>({});
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
-
   useEffect(() => {
     loadZones();
   }, []);
