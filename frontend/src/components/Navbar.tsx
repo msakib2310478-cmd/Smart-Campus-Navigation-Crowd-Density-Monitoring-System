@@ -1,51 +1,68 @@
-import { Link, useLocation } from 'react-router-dom';
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
-export default function Navbar() {
-  const location = useLocation();
+export const Navbar: React.FC = () => {
+  const { isAuthenticated, user, logout } = useAuth();
+  const navigate = useNavigate();
 
-  const isActive = (path: string) => location.pathname === path;
-
-  const linkClass = (path: string) =>
-    `px-3 py-2 rounded-md text-sm font-medium ${
-      isActive(path)
-        ? 'bg-blue-700 text-white'
-        : 'text-gray-300 hover:bg-blue-600 hover:text-white'
-    }`;
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
 
   return (
-    <nav className="bg-blue-800 shadow-lg">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between h-16">
-          <div className="flex items-center">
-            <Link to="/" className="text-white text-xl font-bold">
-              Smart Campus
-            </Link>
-          </div>
-          <div className="flex items-center space-x-2">
-            <Link to="/" className={linkClass('/')}>
-              Home
-            </Link>
-            <Link to="/live" className={linkClass('/live')}>
-              Live Map
-            </Link>
-            <Link to="/zones" className={linkClass('/zones')}>
-              Zones
-            </Link>
-            <Link to="/route" className={linkClass('/route')}>
-              Route Planner
-            </Link>
-            <Link to="/recommendations" className={linkClass('/recommendations')}>
-              Recommendations
-            </Link>
-            <Link to="/reports" className={linkClass('/reports')}>
-              Reports
-            </Link>
-            <Link to="/admin" className={linkClass('/admin')}>
-              Admin
-            </Link>
+    <nav className="bg-gradient-to-r from-teal-600 to-cyan-600 shadow-lg">
+      <div className="max-w-7xl mx-auto px-4">
+        <div className="flex justify-between items-center h-16">
+          <Link to="/" className="flex items-center space-x-2">
+            <div className="text-white font-bold text-xl">📍 Campus Nav</div>
+          </Link>
+
+          <div className="flex space-x-4 items-center">
+            {isAuthenticated ? (
+              <>
+                <Link to="/dashboard" className="text-white hover:text-cyan-200 transition">
+                  Dashboard
+                </Link>
+                <Link to="/map" className="text-white hover:text-cyan-200 transition">
+                  Live Map
+                </Link>
+                <Link to="/statistics" className="text-white hover:text-cyan-200 transition">
+                  Statistics
+                </Link>
+                <Link to="/recommend" className="text-white hover:text-cyan-200 transition">
+                  Recommend
+                </Link>
+                <Link to="/profile" className="text-white hover:text-cyan-200 transition">
+                  {user?.fullName}
+                </Link>
+                <button
+                  onClick={handleLogout}
+                  className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded transition"
+                >
+                  Logout
+                </button>
+              </>
+            ) : (
+              <>
+                <Link
+                  to="/signup"
+                  className="bg-white text-teal-600 hover:bg-cyan-100 px-4 py-2 rounded transition"
+                >
+                  Signup
+                </Link>
+                <Link
+                  to="/login"
+                  className="bg-cyan-400 text-white hover:bg-cyan-500 px-4 py-2 rounded transition"
+                >
+                  Login
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </div>
     </nav>
   );
-}
+};

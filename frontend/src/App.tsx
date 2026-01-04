@@ -1,34 +1,39 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import Layout from './layouts/Layout';
-import Landing from './pages/Landing';
-import LiveMap from './pages/LiveMap';
-import Zones from './pages/Zones';
-import ZoneDetails from './pages/ZoneDetails';
-import RoutePlanner from './pages/RoutePlanner';
-import Recommendations from './pages/Recommendations';
-import Reports from './pages/Reports';
-import AdminDashboard from './pages/AdminDashboard';
-import NotFound from './pages/NotFound';
+import { AuthProvider } from './context/AuthContext';
+import { PrivateRoute } from './components/PrivateRoute';
+import { HomePage } from './pages/HomePage';
+import { SignupPage } from './pages/SignupPage';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { LiveMapPage } from './pages/LiveMapPage';
+import { StatisticsPage } from './pages/StatisticsPage';
+import { RecommendationPage } from './pages/RecommendationPage';
+import { ProfilePage } from './pages/ProfilePage';
+import './index.css';
 
 function App() {
   return (
     <Router>
-      <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Landing />} />
-          <Route path="live" element={<LiveMap />} />
-          <Route path="zones" element={<Zones />} />
-          <Route path="zones/:zoneId" element={<ZoneDetails />} />
-          <Route path="route" element={<RoutePlanner />} />
-          <Route path="recommendations" element={<Recommendations />} />
-          <Route path="reports" element={<Reports />} />
-          <Route path="admin" element={<AdminDashboard />} />
-          <Route path="*" element={<NotFound />} />
-        </Route>
-      </Routes>
+      <AuthProvider>
+        <div className="min-h-screen bg-gray-50">
+          <Routes>
+            <Route path="/" element={<HomePage />} />
+            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/login" element={<LoginPage />} />
+
+            {/* Private Routes */}
+            <Route element={<PrivateRoute />}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/map" element={<LiveMapPage />} />
+              <Route path="/statistics" element={<StatisticsPage />} />
+              <Route path="/recommend" element={<RecommendationPage />} />
+              <Route path="/profile" element={<ProfilePage />} />
+            </Route>
+          </Routes>
+        </div>
+      </AuthProvider>
     </Router>
   );
 }
 
 export default App;
-
