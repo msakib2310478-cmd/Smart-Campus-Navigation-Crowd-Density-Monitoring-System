@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { locationAPI } from '../services/api';
 import { Zone } from '../types';
 import { useAuth } from '../context/AuthContext';
+import { Navbar } from '../components/Navbar';
 
 export const LiveMapPage: React.FC = () => {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -9,6 +10,7 @@ export const LiveMapPage: React.FC = () => {
   const [error, setError] = useState('');
   const [actionMessage, setActionMessage] = useState('');
   const [actionError, setActionError] = useState('');
+  const [selectedZone, setSelectedZone] = useState<Zone | null>(null);
   const [updatingZone, setUpdatingZone] = useState<string | null>(null);
   const { user } = useAuth();
 
@@ -28,6 +30,10 @@ export const LiveMapPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleZoneClick = (zone: Zone) => {
+    setSelectedZone(zone);
   };
 
   const handleUpdate = async (zoneName: string, action: 'ENTER' | 'EXIT') => {
@@ -68,9 +74,11 @@ export const LiveMapPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-teal-900 mb-8">Live Campus Map</h1>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50">
+      <Navbar />
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-4xl font-bold text-teal-900 mb-8">Live Campus Map</h1>
 
         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">{error}</div>}
         {actionError && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">{actionError}</div>}
@@ -96,11 +104,22 @@ export const LiveMapPage: React.FC = () => {
 
               const radius = 40;
               const fillColor = getCrowdColor(zone.crowdLevel);
+              const isSelected = selectedZone?.name === zone.name;
 
               return (
                 <g key={zone.name}>
                   {/* Building circle */}
-                  <circle cx={pos.x} cy={pos.y} r={radius} fill={fillColor} fillOpacity="0.8" stroke="#333" strokeWidth="2" />
+                  <circle
+                    cx={pos.x}
+                    cy={pos.y}
+                    r={radius}
+                    fill={fillColor}
+                    fillOpacity={isSelected ? "1" : "0.8"}
+                    stroke={isSelected ? "#000" : "#333"}
+                    strokeWidth={isSelected ? "4" : "2"}
+                    className="cursor-pointer hover:fill-opacity-100 transition-all duration-200"
+                    onClick={() => handleZoneClick(zone)}
+                  />
 
                   {/* Building label */}
                   <text
@@ -158,13 +177,69 @@ export const LiveMapPage: React.FC = () => {
           </div>
         </div>
 
+        {/* Selected Zone Actions */}
+        {selectedZone && (
+          <div className="bg-white rounded-lg shadow-xl p-6 mb-8 border-2 border-teal-500">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-2xl font-bold text-gray-900">
+                Navigate to {selectedZone.name}
+              </h3>
+              <button
+                onClick={() => setSelectedZone(null)}
+                className="text-gray-500 hover:text-gray-700 text-xl"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+              <div>
+                <h4 className="text-lg font-semibold mb-3">Zone Information</h4>
+                <div className="space-y-2">
+                  <p><span className="font-semibold">Status:</span> 
+                    <span className="ml-2 font-bold" style={{ color: getCrowdColor(selectedZone.crowdLevel) }}>
+                      {selectedZone.crowdLevel}
+                    </span>
+                  </p>
+                  <p><span className="font-semibold">Current Occupancy:</span> {selectedZone.currentCount}/{selectedZone.capacity}</p>
+                  <p><span className="font-semibold">Occupancy Rate:</span> {selectedZone.occupancyPercentage.toFixed(1)}%</p>
+                  <p><span className="font-semibold">Available Spots:</span> {selectedZone.capacity - selectedZone.currentCount}</p>
+                </div>
+              </div>
+
+              <div>
+                <h4 className="text-lg font-semibold mb-3">Navigation Actions</h4>
+                <div className="space-y-3">
+                  <button
+                    onClick={() => handleUpdate(selectedZone.name, 'ENTER')}
+                    disabled={!!updatingZone}
+                    className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {updatingZone === selectedZone.name + 'ENTER' ? 'Entering Zone...' : 'Enter Zone'}
+                  </button>
+                  <button
+                    onClick={() => handleUpdate(selectedZone.name, 'EXIT')}
+                    disabled={!!updatingZone}
+                    className="w-full bg-gray-600 hover:bg-gray-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {updatingZone === selectedZone.name + 'EXIT' ? 'Exiting Zone...' : 'Exit Zone'}
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Detailed Zone Information */}
         <h2 className="text-2xl font-bold text-gray-900 mb-6">Zone Details</h2>
         <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
           {zones.map((zone) => (
             <div
               key={zone.name}
-              className="bg-white rounded-lg shadow-md p-4 border-l-4"
+              onClick={() => handleZoneClick(zone)}
+              className={`bg-white rounded-lg shadow-md p-4 border-l-4 cursor-pointer transition-all duration-200 hover:shadow-lg ${
+                selectedZone?.name === zone.name ? 'ring-2 ring-teal-500 shadow-xl' : ''
+              }`}
               style={{ borderColor: getCrowdColor(zone.crowdLevel) }}
             >
               <h4 className="font-bold text-gray-900 mb-3">{zone.name}</h4>
@@ -214,6 +289,7 @@ export const LiveMapPage: React.FC = () => {
             <p className="text-gray-600">Updating map...</p>
           </div>
         )}
+        </div>
       </div>
     </div>
   );

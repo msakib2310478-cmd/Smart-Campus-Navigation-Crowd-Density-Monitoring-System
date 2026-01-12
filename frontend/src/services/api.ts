@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 import { AuthResponse, Zone, LocationUpdate } from '../types';
 
-const API_BASE_URL = 'http://localhost:8080/api';
+const API_BASE_URL = '/api';
 
 const api = axios.create({
   baseURL: API_BASE_URL,

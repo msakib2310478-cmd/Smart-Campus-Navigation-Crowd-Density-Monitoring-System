@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { recommendationAPI } from '../services/api';
 import { Zone } from '../types';
+import { Navbar } from '../components/Navbar';
 
 export const RecommendationPage: React.FC = () => {
   const [bestZone, setBestZone] = useState<Zone | null>(null);
@@ -31,9 +32,11 @@ export const RecommendationPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 p-8">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-4xl font-bold text-teal-900 mb-8">Recommendations</h1>
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50">
+      <Navbar />
+      <div className="p-8">
+        <div className="max-w-7xl mx-auto">
+          <h1 className="text-4xl font-bold text-teal-900 mb-8">Recommendations</h1>
 
         {error && <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">{error}</div>}
 
@@ -82,13 +85,7 @@ export const RecommendationPage: React.FC = () => {
 
                 <div className="w-32 bg-gray-300 rounded-full h-3 overflow-hidden">
                   <div
-                    className={`h-full ${
-                      zone.crowdLevel === 'LOW'
-                        ? 'bg-green-500'
-                        : zone.crowdLevel === 'MEDIUM'
-                        ? 'bg-yellow-500'
-                        : 'bg-red-500'
-                    }`}
+                    className={`h-full ${zone.crowdLevel === 'LOW' ? 'bg-green-500' : zone.crowdLevel === 'MEDIUM' ? 'bg-yellow-500' : 'bg-red-500'}`}
                     style={{ width: `${Math.min(zone.occupancyPercentage, 100)}%` }}
                   />
                 </div>
@@ -114,6 +111,7 @@ export const RecommendationPage: React.FC = () => {
           </div>
         )}
       </div>
+    </div>
     </div>
   );
 };

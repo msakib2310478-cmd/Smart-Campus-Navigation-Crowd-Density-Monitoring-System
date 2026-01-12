@@ -9,6 +9,8 @@ import { LiveMapPage } from './pages/LiveMapPage';
 import { StatisticsPage } from './pages/StatisticsPage';
 import { RecommendationPage } from './pages/RecommendationPage';
 import { ProfilePage } from './pages/ProfilePage';
+import { QRCodesPage } from './pages/QRCodesPage';
+import { QRScannerPage } from './pages/QRScannerPage';
 import './index.css';
 
 function App() {
@@ -28,6 +30,8 @@ function App() {
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/recommend" element={<RecommendationPage />} />
               <Route path="/profile" element={<ProfilePage />} />
+              <Route path="/qr-codes" element={<QRCodesPage />} />
+              <Route path="/scanner" element={<QRScannerPage />} />
             </Route>
           </Routes>
         </div>

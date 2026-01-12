@@ -2,257 +2,181 @@ import React from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-export const HomePage: React.FC = () => {
+export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
-  const { isAuthenticated } = useAuth();
+  const { user, logout } = useAuth();
 
-  const handleZoneClick = (zoneName: string) => {
-    if (isAuthenticated) {
-      // Navigate to dashboard for authenticated users
-      navigate('/dashboard', { state: { selectedZone: zoneName } });
-    } else {
-      // Prompt to login for non-authenticated users
-      navigate('/login', { state: { redirectTo: '/dashboard', selectedZone: zoneName } });
+  const handleLogout = () => {
+    logout();
+    navigate('/');
+  };
+
+  const quickActions = [
+    {
+      title: 'QR Scanner',
+      description: 'Scan zone QR codes to update your location instantly',
+      icon: '📸',
+      path: '/scanner',
+      color: 'from-emerald-500 to-green-500'
+    },
+    {
+      title: 'Live Campus Map',
+      description: 'View real-time crowd density and navigate campus zones',
+      icon: '🗺️',
+      path: '/map',
+      color: 'from-blue-500 to-cyan-500'
+    },
+    {
+      title: 'Crowd Statistics',
+      description: 'Analyze crowd patterns and historical data',
+      icon: '📊',
+      path: '/statistics',
+      color: 'from-green-500 to-teal-500'
+    },
+    {
+      title: 'Smart Recommendations',
+      description: 'Find the best uncrowded location for your needs',
+      icon: '🎯',
+      path: '/recommend',
+      color: 'from-purple-500 to-pink-500'
+    },
+    {
+      title: 'Zone QR Codes',
+      description: 'View and download QR codes for all campus zones',
+      icon: '📱',
+      path: '/qr-codes',
+      color: 'from-indigo-500 to-purple-500'
+    },
+    {
+      title: 'Profile Settings',
+      description: 'Manage your account and preferences',
+      icon: '👤',
+      path: '/profile',
+      color: 'from-orange-500 to-red-500'
     }
-  };
+  ];
 
-  const getZoneIcon = (zoneName: string) => {
-    const name = zoneName.toLowerCase();
-    if (name.includes('library')) return '📚';
-    if (name.includes('cafeteria') || name.includes('cafe')) return '🍽️';
-    if (name.includes('study')) return '📖';
-    if (name.includes('game')) return '🎮';
-    if (name.includes('gym')) return '🏋️';
-    if (name.includes('lab')) return '💻';
-    if (name.includes('common')) return '🛋️';
-    return '🏛️';
-  };
+  const campusZones = [
+    { name: 'Library', capacity: 200, icon: '📚', description: 'Study areas and reading rooms' },
+    { name: 'Cafeteria', capacity: 150, icon: '🍽️', description: 'Dining and social spaces' },
+    { name: 'Computer Lab', capacity: 80, icon: '💻', description: 'Computing facilities' },
+    { name: 'Study Hall', capacity: 120, icon: '📖', description: 'Group study spaces' },
+    { name: 'Gym', capacity: 100, icon: '🏋️', description: 'Fitness center' },
+    { name: 'Common Room', capacity: 60, icon: '🛋️', description: 'Relaxation areas' }
+  ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-teal-50 via-cyan-50 to-blue-50">
-      {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 py-20">
-        <div className="text-center mb-16">
-          <h1 className="text-5xl font-bold text-teal-900 mb-4">Campus Navigation System</h1>
-          <p className="text-xl text-gray-700 mb-8">
-            Real-time crowd density monitoring & smart campus navigation
-          </p>
-          <div className="flex gap-4 justify-center">
-            <Link
-              to="/signup"
-              className="bg-teal-600 hover:bg-teal-700 text-white px-8 py-3 rounded-lg font-semibold transition"
-            >
-              Get Started
-            </Link>
-            <Link
-              to="/login"
-              className="border-2 border-teal-600 text-teal-600 hover:bg-teal-50 px-8 py-3 rounded-lg font-semibold transition"
-            >
-              Login
-            </Link>
+      {/* Navigation Bar */}
+      <nav className="bg-white shadow-lg">
+        <div className="max-w-7xl mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            <div className="flex items-center space-x-2">
+              <div className="text-2xl">📍</div>
+              <span className="text-xl font-bold text-teal-700">Campus Nav</span>
+            </div>
+            <div className="flex items-center space-x-4">
+              <span className="text-gray-700">Welcome, {user?.fullName}!</span>
+              <button
+                onClick={handleLogout}
+                className="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition"
+              >
+                Logout
+              </button>
+            </div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Main Content */}
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* Welcome Section */}
+        <div className="bg-white rounded-lg shadow-lg p-8 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-teal-900 mb-2">
+                Welcome back, {user?.fullName}!
+              </h1>
+              <p className="text-gray-600">
+                Access real-time campus navigation and crowd monitoring tools
+              </p>
+            </div>
+            <div className="text-6xl">🎓</div>
           </div>
         </div>
 
-        {/* Problem Statement */}
-        <div className="grid md:grid-cols-2 gap-12 items-center mb-20">
-          <div>
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">The Problem</h2>
-            <p className="text-gray-700 mb-4">
-              Students waste 30-40 minutes daily searching for uncrowded spaces in libraries, cafeterias, labs, and common rooms.
-            </p>
-            <p className="text-gray-700">
-              Without real-time information about crowd levels, it's impossible to make informed decisions about where to study or spend time.
-            </p>
-          </div>
-          <div className="bg-white rounded-lg shadow-lg p-8">
-            <div className="text-4xl text-center mb-4">⏱️</div>
-            <p className="text-center text-gray-600">
-              Average time wasted per student per day searching for space
-            </p>
-            <p className="text-center text-4xl font-bold text-red-500 mt-2">30-40 min</p>
-          </div>
-        </div>
-
-        {/* Features */}
-        <div className="mb-20">
-          <h2 className="text-3xl font-bold text-gray-900 mb-12 text-center">Key Features</h2>
-          <div className="grid md:grid-cols-3 gap-8">
-            <FeatureCard
-              icon="📍"
-              title="Real-Time Tracking"
-              description="Live location updates from campus users"
-            />
-            <FeatureCard
-              icon="📊"
-              title="Crowd Density"
-              description="Visual indicators (Green/Yellow/Red) for crowd levels"
-            />
-            <FeatureCard
-              icon="🧭"
-              title="Smart Recommendations"
-              description="Find the best uncrowded location instantly"
-            />
-            <FeatureCard
-              icon="📱"
-              title="Multi-Platform"
-              description="Works on web, Java client, and desktop apps"
-            />
-            <FeatureCard
-              icon="🔐"
-              title="Secure Authentication"
-              description="Email or Student ID login"
-            />
-            <FeatureCard
-              icon="📈"
-              title="Analytics"
-              description="View historical crowd statistics and trends"
-            />
-          </div>
-        </div>
-
-        {/* Zone Overview */}
-        <div className="mb-20">
-          <h2 className="text-3xl font-bold text-gray-900 mb-4 text-center">Explore Campus Zones</h2>
-          <p className="text-gray-600 text-center mb-8">Click on any zone to check real-time crowd density and navigate</p>
+        {/* Quick Actions */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Quick Actions</h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            <ZoneButton 
-              name="Library" 
-              capacity={100} 
-              icon={getZoneIcon("Library")}
-              onClick={() => handleZoneClick("Library")}
-              description="Study and research resources"
-            />
-            <ZoneButton 
-              name="Cafeteria" 
-              capacity={60} 
-              icon={getZoneIcon("Cafeteria")}
-              onClick={() => handleZoneClick("Cafeteria")}
-              description="Dining and refreshments"
-            />
-            <ZoneButton 
-              name="Study Room" 
-              capacity={40} 
-              icon={getZoneIcon("Study Room")}
-              onClick={() => handleZoneClick("Study Room")}
-              description="Quiet study spaces"
-            />
-            <ZoneButton 
-              name="Game Zone" 
-              capacity={30} 
-              icon={getZoneIcon("Game Zone")}
-              onClick={() => handleZoneClick("Game Zone")}
-              description="Recreation and gaming"
-            />
-            <ZoneButton 
-              name="Gym" 
-              capacity={25} 
-              icon={getZoneIcon("Gym")}
-              onClick={() => handleZoneClick("Gym")}
-              description="Fitness and exercise"
-            />
-            <ZoneButton 
-              name="Labs" 
-              capacity={50} 
-              icon={getZoneIcon("Labs")}
-              onClick={() => handleZoneClick("Labs")}
-              description="Computer and science labs"
-            />
-            <ZoneButton 
-              name="Common Room" 
-              capacity={35} 
-              icon={getZoneIcon("Common Room")}
-              onClick={() => handleZoneClick("Common Room")}
-              description="Social and relaxation area"
-            />
-            <ZoneButton 
-              name="Auditorium" 
-              capacity={200} 
-              icon="🎭"
-              onClick={() => handleZoneClick("Auditorium")}
-              description="Events and presentations"
-            />
-          </div>
-          
-          {/* Quick Action Buttons */}
-          <div className="mt-12 flex flex-wrap gap-4 justify-center">
-            <button
-              onClick={() => isAuthenticated ? navigate('/live-map') : navigate('/login')}
-              className="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-md"
-            >
-              <span>🗺️</span>
-              View Live Map
-            </button>
-            <button
-              onClick={() => isAuthenticated ? navigate('/recommendations') : navigate('/login')}
-              className="bg-purple-600 hover:bg-purple-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-md"
-            >
-              <span>💡</span>
-              Get Recommendations
-            </button>
-            <button
-              onClick={() => isAuthenticated ? navigate('/statistics') : navigate('/login')}
-              className="bg-orange-600 hover:bg-orange-700 text-white px-6 py-3 rounded-lg font-semibold transition flex items-center gap-2 shadow-md"
-            >
-              <span>📊</span>
-              View Statistics
-            </button>
+            {quickActions.map((action, index) => (
+              <Link
+                key={index}
+                to={action.path}
+                className="bg-white rounded-lg shadow-md p-6 hover:shadow-xl transition-all duration-300 hover:scale-105 group"
+              >
+                <div className={`bg-gradient-to-r ${action.color} w-12 h-12 rounded-lg flex items-center justify-center mb-4 group-hover:scale-110 transition-transform`}>
+                  <span className="text-2xl">{action.icon}</span>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">{action.title}</h3>
+                <p className="text-sm text-gray-600">{action.description}</p>
+                <div className="mt-4 text-teal-600 font-semibold text-sm group-hover:text-teal-700">
+                  Access →
+                </div>
+              </Link>
+            ))}
           </div>
         </div>
 
-        {/* CTA Section */}
-        <div className="bg-gradient-to-r from-teal-600 to-cyan-600 rounded-lg p-12 text-center text-white">
-          <h3 className="text-3xl font-bold mb-4">Ready to Get Started?</h3>
-          <p className="text-lg mb-8">Join thousands of students saving time every day</p>
-          <Link
-            to="/signup"
-            className="bg-white text-teal-600 hover:bg-cyan-50 px-8 py-3 rounded-lg font-semibold transition inline-block"
-          >
-            Sign Up Now
-          </Link>
+        {/* Campus Zones Overview */}
+        <div className="mb-12">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">Campus Zones</h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {campusZones.map((zone, index) => (
+              <button
+                key={index}
+                onClick={() => navigate('/map', { state: { selectedZone: zone.name } })}
+                className="bg-white rounded-lg shadow-md p-6 text-left hover:shadow-xl hover:scale-105 transition-all duration-300 group"
+              >
+                <div className="flex items-center justify-between mb-4">
+                  <span className="text-3xl">{zone.icon}</span>
+                  <span className="text-sm text-gray-500">Click to navigate</span>
+                </div>
+                <h3 className="font-bold text-gray-900 mb-2">{zone.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{zone.description}</p>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-gray-500">Capacity: {zone.capacity}</span>
+                  <span className="text-teal-600 font-semibold text-sm group-hover:text-teal-700">
+                    View Map →
+                  </span>
+                </div>
+              </button>
+            ))}
+          </div>
         </div>
-      </section>
+
+        {/* System Status */}
+        <div className="bg-white rounded-lg shadow-lg p-8">
+          <h2 className="text-2xl font-bold text-gray-900 mb-6">System Status</h2>
+          <div className="grid md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-3xl mb-2">🟢</div>
+              <h3 className="font-bold text-gray-900">Live Tracking</h3>
+              <p className="text-sm text-gray-600">Real-time updates active</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-2">📍</div>
+              <h3 className="font-bold text-gray-900">Campus Coverage</h3>
+              <p className="text-sm text-gray-600">All zones monitored</p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-2">👥</div>
+              <h3 className="font-bold text-gray-900">Active Users</h3>
+              <p className="text-sm text-gray-600">Real-time participation</p>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
-
-interface FeatureCardProps {
-  icon: string;
-  title: string;
-  description: string;
-}
-
-const FeatureCard: React.FC<FeatureCardProps> = ({ icon, title, description }) => (
-  <div className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition">
-    <div className="text-4xl mb-4">{icon}</div>
-    <h3 className="text-xl font-bold text-gray-900 mb-2">{title}</h3>
-    <p className="text-gray-600">{description}</p>
-  </div>
-);
-
-interface ZoneOverviewProps {
-  name: string;
-  capacity: number;
-  icon: string;
-  description: string;
-  onClick: () => void;
-}
-
-const ZoneButton: React.FC<ZoneOverviewProps> = ({ name, capacity, icon, description, onClick }) => (
-  <button
-    onClick={onClick}
-    className="bg-white rounded-lg shadow-md p-6 text-center hover:shadow-xl hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-teal-500 group"
-  >
-    <div className="text-5xl mb-3 group-hover:scale-110 transition-transform">{icon}</div>
-    <h4 className="font-bold text-gray-900 mb-2 text-lg">{name}</h4>
-    <p className="text-sm text-gray-600 mb-3">{description}</p>
-    <div className="flex items-center justify-center gap-2 text-sm">
-      <span className="text-gray-500">Capacity:</span>
-      <span className="font-semibold text-teal-600">{capacity}</span>
-    </div>
-    <div className="mt-3 pt-3 border-t border-gray-200">
-      <span className="text-xs text-teal-600 font-semibold group-hover:text-teal-700">
-        Click to view details →
-      </span>
-    </div>
-  </button>
-);

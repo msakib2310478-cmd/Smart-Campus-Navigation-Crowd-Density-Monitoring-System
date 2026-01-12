@@ -52,13 +52,7 @@ export const ZoneCard: React.FC<ZoneCardProps> = ({ zone, onSelect }) => {
 
         <div className="w-full bg-gray-300 rounded-full h-3 overflow-hidden mt-2">
           <div
-            className={`h-full ${
-              zone.crowdLevel === 'LOW'
-                ? 'bg-green-500'
-                : zone.crowdLevel === 'MEDIUM'
-                ? 'bg-yellow-500'
-                : 'bg-red-500'
-            } transition-all duration-300`}
+            className={`h-full ${zone.crowdLevel === 'LOW' ? 'bg-green-500' : zone.crowdLevel === 'MEDIUM' ? 'bg-yellow-500' : 'bg-red-500'} transition-all duration-300`}
             style={{ width: `${Math.min(zone.occupancyPercentage, 100)}%` }}
           />
         </div>

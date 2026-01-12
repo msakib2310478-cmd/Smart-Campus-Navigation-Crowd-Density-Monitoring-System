@@ -1,4 +1,42 @@
+import React from 'react';
 import { useAuth } from '../context/AuthContext';
+import { Navbar } from '../components/Navbar';
+
+interface InfoFieldProps {
+  label: string;
+  value: string;
+}
+
+interface StatCardProps {
+  label: string;
+  value: string;
+}
+
+interface SettingOptionProps {
+  label: string;
+  enabled: boolean;
+}
+
+const InfoField: React.FC<InfoFieldProps> = ({ label, value }) => (
+  <div className="flex justify-between items-center py-3 border-b">
+    <label className="font-semibold text-gray-700">{label}</label>
+    <span className="text-gray-900">{value}</span>
+  </div>
+);
+
+const StatCard: React.FC<StatCardProps> = ({ label, value }) => (
+  <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-4 border border-teal-200">
+    <p className="text-sm text-gray-600 mb-1">{label}</p>
+    <p className="text-2xl font-bold text-teal-600">{value}</p>
+  </div>
+);
+
+const SettingOption: React.FC<SettingOptionProps> = ({ label, enabled }) => (
+  <div className="flex justify-between items-center py-3 px-4 bg-gray-50 rounded border border-gray-200">
+    <label className="text-gray-700">{label}</label>
+    <input type="checkbox" defaultChecked={enabled} className="w-5 h-5 text-teal-600 rounded" />
+  </div>
+);
 
 export const ProfilePage: React.FC = () => {
   const { user } = useAuth();
@@ -12,7 +50,9 @@ export const ProfilePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50 p-8">
+    <div className="min-h-screen bg-gradient-to-br from-teal-50 to-cyan-50">
+      <Navbar />
+      <div className="p-8">
       <div className="max-w-2xl mx-auto">
         <h1 className="text-4xl font-bold text-teal-900 mb-8">My Profile</h1>
 
@@ -76,41 +116,8 @@ export const ProfilePage: React.FC = () => {
         </div>
       </div>
     </div>
+    </div>
   );
 };
 
-interface InfoFieldProps {
-  label: string;
-  value: string;
-}
-
-const InfoField: React.FC<InfoFieldProps> = ({ label, value }) => (
-  <div className="flex justify-between items-center py-3 border-b">
-    <label className="font-semibold text-gray-700">{label}</label>
-    <span className="text-gray-900">{value}</span>
-  </div>
-);
-
-interface StatCardProps {
-  label: string;
-  value: string;
-}
-
-const StatCard: React.FC<StatCardProps> = ({ label, value }) => (
-  <div className="bg-gradient-to-br from-teal-50 to-cyan-50 rounded-lg p-4 border border-teal-200">
-    <p className="text-sm text-gray-600 mb-1">{label}</p>
-    <p className="text-2xl font-bold text-teal-600">{value}</p>
-  </div>
-);
-
-interface SettingOptionProps {
-  label: string;
-  enabled: boolean;
-}
-
-const SettingOption: React.FC<SettingOptionProps> = ({ label, enabled }) => (
-  <div className="flex justify-between items-center py-3 px-4 bg-gray-50 rounded border border-gray-200">
-    <label className="text-gray-700">{label}</label>
-    <input type="checkbox" defaultChecked={enabled} className="w-5 h-5 text-teal-600 rounded" />
-  </div>
-);
+export default ProfilePage;

@@ -25,14 +25,17 @@ export const Navbar: React.FC = () => {
                 <Link to="/dashboard" className="text-white hover:text-cyan-200 transition">
                   Dashboard
                 </Link>
+                <Link to="/scanner" className="text-white hover:text-cyan-200 transition flex items-center gap-1">
+                  <span>📸</span> Scanner
+                </Link>
                 <Link to="/map" className="text-white hover:text-cyan-200 transition">
                   Live Map
                 </Link>
                 <Link to="/statistics" className="text-white hover:text-cyan-200 transition">
                   Statistics
                 </Link>
-                <Link to="/recommend" className="text-white hover:text-cyan-200 transition">
-                  Recommend
+                <Link to="/qr-codes" className="text-white hover:text-cyan-200 transition">
+                  QR Codes
                 </Link>
                 <Link to="/profile" className="text-white hover:text-cyan-200 transition">
                   {user?.fullName}
