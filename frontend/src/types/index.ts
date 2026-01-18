@@ -26,3 +26,10 @@ export interface LocationUpdate {
   zoneName: string;
   action: 'ENTER' | 'EXIT';
 }
+
+export interface LocationUpdateResponse {
+  message: string;
+  currentZone: string | null;
+  previousZone: string | null;
+  autoExited: boolean;
+}

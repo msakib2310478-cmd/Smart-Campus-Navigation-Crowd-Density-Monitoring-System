@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { AuthResponse, Zone, LocationUpdate } from '../types';
+import { AuthResponse, Zone, LocationUpdate, LocationUpdateResponse } from '../types';
 
 const API_BASE_URL = '/api';
 
@@ -72,11 +72,13 @@ export const authAPI = {
 // Location APIs
 export const locationAPI = {
   updateLocation: (update: LocationUpdate) =>
-    api.post('/location/update', update),
+    api.post<LocationUpdateResponse>('/location/update', update),
   getCrowdStatus: () =>
     api.get<Zone[]>('/location/crowd'),
   getQuietestZone: () =>
     api.get<Zone>('/location/quiet'),
+  getUserCurrentZone: (userId: string) =>
+    api.get<{ currentZone: string | null }>(`/location/current/${userId}`),
 };
 
 // Recommendation APIs
