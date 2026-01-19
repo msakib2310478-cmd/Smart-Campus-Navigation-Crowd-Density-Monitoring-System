@@ -200,6 +200,416 @@ Initial zone data is loaded from `backend/src/main/resources/data/zones-capacity
     └── tailwind.config.js
 ```
 
+---
+
+## High-Level System Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              CLIENT LAYER                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                     React Frontend (Vite + TypeScript)               │    │
+│  │  ┌──────────┐  ┌──────────┐  ┌──────────┐  ┌──────────────────────┐ │    │
+│  │  │  Pages   │  │Components│  │ Context  │  │     Services (API)   │ │    │
+│  │  │ HomePage │  │  Navbar  │  │AuthContext│ │  Axios HTTP Client  │ │    │
+│  │  │Dashboard │  │ ZoneCard │  │          │  │  locationAPI        │ │    │
+│  │  │ LiveMap  │  │PrivRoute │  │          │  │  authAPI            │ │    │
+│  │  └──────────┘  └──────────┘  └──────────┘  └──────────────────────┘ │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      │ HTTP REST / WebSocket
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              SERVER LAYER                                    │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                  Spring Boot Backend (Java 17)                       │    │
+│  │                                                                      │    │
+│  │  ┌────────────────┐    ┌────────────────┐    ┌──────────────────┐   │    │
+│  │  │   Controllers  │    │    Services    │    │   Repositories   │   │    │
+│  │  │ AuthController │───▶│  AuthService   │───▶│  UserRepository  │   │    │
+│  │  │LocationController│──▶│  CrowdService  │    │AuditLogRepository│   │    │
+│  │  │RecommendController│──▶│ AuditLogService│    │LoginAttemptRepo  │   │    │
+│  │  └────────────────┘    └────────────────┘    └──────────────────┘   │    │
+│  │           │                    │                       │            │    │
+│  │           ▼                    ▼                       ▼            │    │
+│  │  ┌────────────────┐    ┌────────────────┐    ┌──────────────────┐   │    │
+│  │  │     DTOs       │    │     Models     │    │    Security      │   │    │
+│  │  │  AuthRequest   │    │     User       │    │ JwtTokenProvider │   │    │
+│  │  │  AuthResponse  │    │     Zone       │    │ PasswordValidator│   │    │
+│  │  │   ZoneDto      │    │   AuditLog     │    │                  │   │    │
+│  │  └────────────────┘    └────────────────┘    └──────────────────┘   │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              DATA LAYER                                      │
+│  ┌─────────────────────────┐    ┌─────────────────────────────────────┐     │
+│  │   MySQL Database        │    │      In-Memory Storage              │     │
+│  │   - users table         │    │   - ConcurrentHashMap (zones)       │     │
+│  │   - audit_logs table    │    │   - User session tracking           │     │
+│  │   - login_attempts      │    │   - Serialized backup (crowd_data)  │     │
+│  └─────────────────────────┘    └─────────────────────────────────────┘     │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+## Interaction Between Frontend, Backend, and Codespaces
+
+### Development Environment with GitHub Codespaces
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          GitHub Codespaces                                   │
+│  ┌─────────────────────────────────────────────────────────────────────┐    │
+│  │                    Ubuntu Dev Container                              │    │
+│  │                                                                      │    │
+│  │   ┌─────────────────┐         ┌─────────────────┐                   │    │
+│  │   │   Frontend      │         │    Backend      │                   │    │
+│  │   │   Port 5173     │◄───────▶│    Port 8080    │                   │    │
+│  │   │   (Vite Dev)    │   API   │  (Spring Boot)  │                   │    │
+│  │   └────────┬────────┘         └────────┬────────┘                   │    │
+│  │            │                           │                            │    │
+│  │            ▼                           ▼                            │    │
+│  │   ┌─────────────────────────────────────────────────────────┐       │    │
+│  │   │              Shared File System & Environment            │       │    │
+│  │   │        - /workspaces/Smart-Campus-Navigation-...         │       │    │
+│  │   │        - Environment variables (.env files)              │       │    │
+│  │   └─────────────────────────────────────────────────────────┘       │    │
+│  └─────────────────────────────────────────────────────────────────────┘    │
+│                                      │                                       │
+│                              Port Forwarding                                 │
+│                                      ▼                                       │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                      │
+                                      ▼
+                        ┌─────────────────────────┐
+                        │    Developer Browser    │
+                        │  https://*.github.dev   │
+                        └─────────────────────────┘
+```
+
+### Request Flow
+
+1. **User Action**: User interacts with the React frontend (e.g., scans QR code, views live map)
+2. **API Call**: Frontend makes HTTP request via Axios to backend REST endpoints
+3. **Controller Layer**: Spring Boot controller receives request, validates input
+4. **Service Layer**: Business logic is executed (authentication, crowd calculations)
+5. **Data Layer**: Data is persisted/retrieved from database or in-memory storage
+6. **Response**: JSON response is sent back through the layers to the frontend
+7. **UI Update**: React state updates and component re-renders with new data
+
+### Communication Protocols
+
+| Protocol | Use Case | Endpoints |
+|----------|----------|-----------|
+| HTTP REST | CRUD operations, Authentication | `/api/auth/*`, `/api/location/*`, `/api/recommend/*` |
+| WebSocket (STOMP) | Real-time crowd updates | `/ws` |
+| JWT Token | Stateless authentication | Authorization header |
+
+---
+
+## CRUD Workflow Explanation
+
+### User Management (Create, Read, Update, Delete)
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                           USER CRUD WORKFLOW                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+CREATE (Signup)
+───────────────
+Frontend                          Backend                           Database
+    │                                │                                  │
+    │  POST /api/auth/signup         │                                  │
+    │  {email, studentId, password}  │                                  │
+    │───────────────────────────────▶│                                  │
+    │                                │  Validate password strength      │
+    │                                │  Hash password (BCrypt)          │
+    │                                │  INSERT INTO users               │
+    │                                │─────────────────────────────────▶│
+    │                                │                                  │
+    │  {token, userId, email}        │◀─────────────────────────────────│
+    │◀───────────────────────────────│                                  │
+
+
+READ (Get Current User)
+───────────────────────
+Frontend                          Backend                           Database
+    │                                │                                  │
+    │  GET /api/auth/me              │                                  │
+    │  Authorization: Bearer <token> │                                  │
+    │───────────────────────────────▶│                                  │
+    │                                │  Validate JWT token              │
+    │                                │  SELECT * FROM users WHERE id    │
+    │                                │─────────────────────────────────▶│
+    │                                │                                  │
+    │  {id, email, fullName}         │◀─────────────────────────────────│
+    │◀───────────────────────────────│                                  │
+
+
+UPDATE (Location Update)
+────────────────────────
+Frontend                          Backend                        In-Memory Store
+    │                                │                                  │
+    │  POST /api/location/update     │                                  │
+    │  {userId, zoneName, action}    │                                  │
+    │───────────────────────────────▶│                                  │
+    │                                │  Validate zone exists            │
+    │                                │  Update zone.activeUsers         │
+    │                                │  Recalculate crowd level         │
+    │                                │─────────────────────────────────▶│
+    │                                │                                  │
+    │  {message, currentZone}        │◀─────────────────────────────────│
+    │◀───────────────────────────────│                                  │
+
+
+DELETE (User Exit Zone)
+───────────────────────
+Frontend                          Backend                        In-Memory Store
+    │                                │                                  │
+    │  POST /api/location/update     │                                  │
+    │  {userId, zoneName, "EXIT"}    │                                  │
+    │───────────────────────────────▶│                                  │
+    │                                │  Remove user from zone           │
+    │                                │  zone.removeUser(userId)         │
+    │                                │─────────────────────────────────▶│
+    │                                │                                  │
+    │  {message, previousZone}       │◀─────────────────────────────────│
+    │◀───────────────────────────────│                                  │
+```
+
+### Zone Data Lifecycle
+
+| Operation | HTTP Method | Endpoint | Description |
+|-----------|-------------|----------|-------------|
+| **Create** | POST | `/api/location/update` | User enters a zone |
+| **Read** | GET | `/api/location/crowd` | Get all zones with crowd data |
+| **Read** | GET | `/api/recommend/best` | Get least crowded zone |
+| **Update** | POST | `/api/location/update` | Update user location |
+| **Delete** | POST | `/api/location/update` (EXIT) | User leaves a zone |
+
+---
+
+## Object-Oriented Principles Used
+
+### 1. Encapsulation
+
+**Definition**: Bundling data and methods that operate on that data within a single unit (class), hiding internal state.
+
+**Implementation in Project**:
+
+```java
+// Zone.java - Encapsulates zone data and behavior
+public class Zone implements Serializable {
+    private String name;
+    private int capacity;
+    private Set<String> activeUsers;  // Hidden internal state
+    private String crowdLevel;
+
+    // Controlled access through methods
+    public void addUser(String userId) {
+        activeUsers.add(userId);
+        updateCrowdLevel();  // Internal state management
+    }
+
+    public int getCurrentCount() {
+        return activeUsers.size();  // Derived property
+    }
+}
+```
+
+**Benefits**:
+- Internal `activeUsers` set is not directly exposed
+- Crowd level is automatically updated when users are added/removed
+- External code cannot corrupt the internal state
+
+---
+
+### 2. Abstraction
+
+**Definition**: Hiding complex implementation details and showing only essential features.
+
+**Implementation in Project**:
+
+```java
+// Service Layer abstracts business logic
+@Service
+public class CrowdService {
+    public Zone getQuietestZone() {
+        // Complex logic hidden from controller
+        return zones.values().stream()
+            .min(Comparator.comparing(Zone::getOccupancyPercentage))
+            .orElse(null);
+    }
+}
+
+// Controller only knows "get quietest zone"
+@GetMapping("/quiet")
+public ResponseEntity<?> getQuietestZone() {
+    Zone quietestZone = crowdService.getQuietestZone();
+    return ResponseEntity.ok(convertToDto(quietestZone));
+}
+```
+
+**DTOs Abstract Internal Models**:
+```java
+// ZoneDto - Exposes only what frontend needs
+public record ZoneDto(
+    String name,
+    int capacity,
+    int currentCount,
+    double occupancyPercentage,
+    String crowdLevel
+) {}
+// activeUsers Set is never exposed to frontend
+```
+
+---
+
+### 3. Inheritance
+
+**Definition**: Creating new classes based on existing classes to promote code reuse.
+
+**Implementation in Project**:
+
+```java
+// All models implement Serializable for persistence
+public class Zone implements Serializable { ... }
+public class User implements Serializable { ... }
+public class AuditLog implements Serializable { ... }
+
+// Spring's inheritance hierarchy
+@RestController  // Inherits from @Controller
+public class AuthController { ... }
+
+// Repository interface inheritance
+public interface UserRepository extends JpaRepository<User, Long> {
+    // Inherits all CRUD methods from JpaRepository
+    Optional<User> findByEmail(String email);
+}
+```
+
+---
+
+### 4. Polymorphism
+
+**Definition**: Objects of different types can be accessed through the same interface.
+
+**Implementation in Project**:
+
+```java
+// Enum polymorphism for audit actions
+public enum AuditAction {
+    LOGIN, LOGOUT, SIGNUP, LOGIN_FAILED, TOKEN_REFRESH, PASSWORD_CHANGE
+}
+
+// Same method handles different actions
+auditLogService.logAction(userId, AuditAction.LOGIN, ...);
+auditLogService.logAction(userId, AuditAction.LOGOUT, ...);
+
+// ResponseEntity polymorphism - returns different types
+@GetMapping("/crowd")
+public ResponseEntity<?> getCrowdStatus() {
+    return ResponseEntity.ok(zoneDtos);        // Success response
+}
+return ResponseEntity.badRequest().body(...);  // Error response
+```
+
+**Frontend Interface Polymorphism (TypeScript)**:
+```typescript
+// Zone interface works for all zone types
+interface Zone {
+    name: string;
+    capacity: number;
+    currentCount: number;
+    crowdLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+}
+// Library, Cafeteria, Gym all implement this interface
+```
+
+---
+
+### 5. Separation of Concerns
+
+**Definition**: Different sections of the application handle different responsibilities.
+
+**Implementation in Project**:
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                      LAYERED ARCHITECTURE                           │
+├─────────────────────────────────────────────────────────────────────┤
+│  PRESENTATION LAYER (Controllers)                                   │
+│  - Handle HTTP requests/responses                                   │
+│  - Input validation                                                 │
+│  - AuthController, LocationController, RecommendationController     │
+├─────────────────────────────────────────────────────────────────────┤
+│  BUSINESS LOGIC LAYER (Services)                                    │
+│  - Core application logic                                           │
+│  - AuthService, CrowdService, AuditLogService                       │
+├─────────────────────────────────────────────────────────────────────┤
+│  DATA ACCESS LAYER (Repositories)                                   │
+│  - Database interactions                                            │
+│  - UserRepository, AuditLogRepository                               │
+├─────────────────────────────────────────────────────────────────────┤
+│  DOMAIN LAYER (Models)                                              │
+│  - Business entities                                                │
+│  - User, Zone, AuditLog, LoginAttempt                               │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+---
+
+### 6. Dependency Injection
+
+**Definition**: Objects receive their dependencies from external sources rather than creating them.
+
+**Implementation in Project**:
+
+```java
+@RestController
+@RequiredArgsConstructor  // Lombok generates constructor injection
+public class AuthController {
+    private final AuthService authService;  // Injected by Spring
+    private final AuditLogService auditLogService;  // Injected by Spring
+    
+    // No manual instantiation needed
+    // Spring manages object lifecycle
+}
+
+@Service
+@RequiredArgsConstructor
+public class AuthService {
+    private final UserRepository userRepository;  // Injected
+    private final JwtTokenProvider jwtTokenProvider;  // Injected
+    private final LoginAttemptService loginAttemptService;  // Injected
+}
+```
+
+**Benefits**:
+- Loose coupling between components
+- Easy unit testing with mock objects
+- Flexible configuration management
+
+---
+
+### Summary Table
+
+| Principle | Where Applied | Example |
+|-----------|---------------|---------|
+| **Encapsulation** | Model classes | `Zone.activeUsers` is private, accessed via methods |
+| **Abstraction** | Service layer, DTOs | `CrowdService.getQuietestZone()` hides complexity |
+| **Inheritance** | Repositories, Serializable | `UserRepository extends JpaRepository` |
+| **Polymorphism** | Enums, ResponseEntity | `AuditAction` enum handles multiple action types |
+| **Separation of Concerns** | Layered architecture | Controller → Service → Repository |
+| **Dependency Injection** | Spring annotations | `@RequiredArgsConstructor`, `@Service`, `@Repository` |
+
+---
+
 ## License
 
 This project is for educational purposes.
