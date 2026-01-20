@@ -14,12 +14,14 @@ A smart campus system that tracks real-time crowd density across locations like 
 ## Architecture
 
 ### Backend (Spring Boot)
+
 - **Framework**: Spring Boot 3.2.0 with Java 17
 - **WebSocket**: STOMP over SockJS for real-time crowd updates
 - **Storage**: In-memory storage (MVP - no database required)
 - **REST API**: Full CRUD endpoints for zones, routes, and reports
 
 ### Frontend (React + Vite)
+
 - **Framework**: React 18 with TypeScript
 - **Build Tool**: Vite for fast development
 - **Styling**: Tailwind CSS for responsive design
@@ -28,7 +30,50 @@ A smart campus system that tracks real-time crowd density across locations like 
 
 ## Getting Started
 
-### Prerequisites
+### Quick Start with Dev Container (Recommended)
+
+This project includes a fully configured dev container that automatically sets up all dependencies.
+
+#### Using GitHub Codespaces
+
+1. Click the **"Code"** button on GitHub
+2. Select **"Codespaces"** tab
+3. Click **"Create codespace on main"**
+4. Wait for the container to build (first time takes ~3-5 minutes)
+5. Everything is ready! Use the helper scripts below.
+
+#### Using VS Code Dev Containers
+
+1. Install [Docker](https://www.docker.com/) and [VS Code Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
+2. Open the project in VS Code
+3. Click **"Reopen in Container"** when prompted (or use Command Palette: `Dev Containers: Reopen in Container`)
+4. Wait for the container to build and dependencies to install
+
+#### Helper Scripts (Available after container setup)
+
+```bash
+# Start both backend and frontend servers
+./start-all.sh
+
+# Start only the backend (Spring Boot on port 8080)
+./start-backend.sh
+
+# Start only the frontend (Vite on port 3000)
+./start-frontend.sh
+```
+
+#### What's Pre-installed in Dev Container
+
+- ☕ **Java 17** with Maven
+- 📦 **Node.js 20** with npm
+- 🔧 **VS Code Extensions**: Java Pack, Spring Boot, ESLint, Prettier, Tailwind CSS IntelliSense, and more
+- 🚀 **Auto-setup**: All Maven and npm dependencies are installed automatically
+
+---
+
+### Manual Setup (Without Dev Container)
+
+#### Prerequisites
 
 - **Java 17** or higher
 - **Maven 3.6+**
@@ -37,21 +82,25 @@ A smart campus system that tracks real-time crowd density across locations like 
 ### Running the Backend
 
 1. Navigate to the backend directory:
+
    ```bash
    cd backend
    ```
 
 2. Build the project:
+
    ```bash
    mvn clean package
    ```
 
 3. Run the application:
+
    ```bash
    mvn spring-boot:run
    ```
-   
+
    Or run the JAR directly:
+
    ```bash
    java -jar target/campus-navigation-1.0.0-SNAPSHOT.jar
    ```
@@ -73,16 +122,19 @@ A smart campus system that tracks real-time crowd density across locations like 
 ### Running the Frontend
 
 1. Navigate to the frontend directory:
+
    ```bash
    cd frontend
    ```
 
 2. Install dependencies:
+
    ```bash
    npm install
    ```
 
 3. Start the development server:
+
    ```bash
    npm run dev
    ```
@@ -105,6 +157,7 @@ A smart campus system that tracks real-time crowd density across locations like 
 ### Building for Production
 
 #### Backend
+
 ```bash
 cd backend
 mvn clean package -DskipTests
@@ -113,6 +166,7 @@ mvn clean package -DskipTests
 The JAR file will be in `target/campus-navigation-1.0.0-SNAPSHOT.jar`
 
 #### Frontend
+
 ```bash
 cd frontend
 npm run build
@@ -137,12 +191,12 @@ Edit `backend/src/main/resources/application.yml`:
 
 ```yaml
 server:
-  port: 8080  # Change backend port
+  port: 8080 # Change backend port
 
 spring:
   web:
     cors:
-      allowed-origins: "http://localhost:5173,http://localhost:3000"  # Add allowed origins
+      allowed-origins: "http://localhost:5173,http://localhost:3000" # Add allowed origins
 ```
 
 ### Frontend Configuration
@@ -162,16 +216,26 @@ Initial zone data is loaded from `backend/src/main/resources/data/zones-capacity
 
 ### VS Code Recommended Extensions
 
+These extensions are **automatically installed** in the Dev Container. For manual setup, install:
+
 - Java Extension Pack
 - Spring Boot Extension Pack
 - ESLint
+- Prettier
 - Tailwind CSS IntelliSense
-- TypeScript Vue Plugin (Volar)
+- GitLens
+- Error Lens
 
 ## Project Structure
 
 ```
 .
+├── .devcontainer/           # Dev Container configuration
+│   ├── devcontainer.json    # Main config (Java 17, Node.js 20, extensions)
+│   ├── Dockerfile           # Custom base image
+│   ├── docker-compose.yml   # Docker orchestration
+│   └── post-create.sh       # Auto-setup script
+│
 ├── backend/
 │   ├── src/main/java/com/university/campus/
 │   │   ├── CampusApplication.java
@@ -185,19 +249,23 @@ Initial zone data is loaded from `backend/src/main/resources/data/zones-capacity
 │   │   └── data/zones-capacity.json
 │   └── pom.xml
 │
-└── frontend/
-    ├── src/
-    │   ├── api/             # API client modules
-    │   ├── components/      # Reusable components
-    │   ├── layouts/         # Layout components
-    │   ├── pages/           # Page components
-    │   ├── realtime/        # WebSocket client
-    │   ├── types/           # TypeScript types
-    │   ├── App.tsx
-    │   └── main.tsx
-    ├── .env
-    ├── package.json
-    └── tailwind.config.js
+├── frontend/
+│   ├── src/
+│   │   ├── api/             # API client modules
+│   │   ├── components/      # Reusable components
+│   │   ├── layouts/         # Layout components
+│   │   ├── pages/           # Page components
+│   │   ├── realtime/        # WebSocket client
+│   │   ├── types/           # TypeScript types
+│   │   ├── App.tsx
+│   │   └── main.tsx
+│   ├── .env
+│   ├── package.json
+│   └── tailwind.config.js
+│
+├── start-all.sh             # Start both servers
+├── start-backend.sh         # Start backend only
+└── start-frontend.sh        # Start frontend only
 ```
 
 ---
@@ -303,11 +371,11 @@ Initial zone data is loaded from `backend/src/main/resources/data/zones-capacity
 
 ### Communication Protocols
 
-| Protocol | Use Case | Endpoints |
-|----------|----------|-----------|
-| HTTP REST | CRUD operations, Authentication | `/api/auth/*`, `/api/location/*`, `/api/recommend/*` |
-| WebSocket (STOMP) | Real-time crowd updates | `/ws` |
-| JWT Token | Stateless authentication | Authorization header |
+| Protocol          | Use Case                        | Endpoints                                            |
+| ----------------- | ------------------------------- | ---------------------------------------------------- |
+| HTTP REST         | CRUD operations, Authentication | `/api/auth/*`, `/api/location/*`, `/api/recommend/*` |
+| WebSocket (STOMP) | Real-time crowd updates         | `/ws`                                                |
+| JWT Token         | Stateless authentication        | Authorization header                                 |
 
 ---
 
@@ -384,13 +452,13 @@ Frontend                          Backend                        In-Memory Store
 
 ### Zone Data Lifecycle
 
-| Operation | HTTP Method | Endpoint | Description |
-|-----------|-------------|----------|-------------|
-| **Create** | POST | `/api/location/update` | User enters a zone |
-| **Read** | GET | `/api/location/crowd` | Get all zones with crowd data |
-| **Read** | GET | `/api/recommend/best` | Get least crowded zone |
-| **Update** | POST | `/api/location/update` | Update user location |
-| **Delete** | POST | `/api/location/update` (EXIT) | User leaves a zone |
+| Operation  | HTTP Method | Endpoint                      | Description                   |
+| ---------- | ----------- | ----------------------------- | ----------------------------- |
+| **Create** | POST        | `/api/location/update`        | User enters a zone            |
+| **Read**   | GET         | `/api/location/crowd`         | Get all zones with crowd data |
+| **Read**   | GET         | `/api/recommend/best`         | Get least crowded zone        |
+| **Update** | POST        | `/api/location/update`        | Update user location          |
+| **Delete** | POST        | `/api/location/update` (EXIT) | User leaves a zone            |
 
 ---
 
@@ -423,6 +491,7 @@ public class Zone implements Serializable {
 ```
 
 **Benefits**:
+
 - Internal `activeUsers` set is not directly exposed
 - Crowd level is automatically updated when users are added/removed
 - External code cannot corrupt the internal state
@@ -456,6 +525,7 @@ public ResponseEntity<?> getQuietestZone() {
 ```
 
 **DTOs Abstract Internal Models**:
+
 ```java
 // ZoneDto - Exposes only what frontend needs
 public record ZoneDto(
@@ -520,13 +590,14 @@ return ResponseEntity.badRequest().body(...);  // Error response
 ```
 
 **Frontend Interface Polymorphism (TypeScript)**:
+
 ```typescript
 // Zone interface works for all zone types
 interface Zone {
-    name: string;
-    capacity: number;
-    currentCount: number;
-    crowdLevel: 'LOW' | 'MEDIUM' | 'HIGH';
+  name: string;
+  capacity: number;
+  currentCount: number;
+  crowdLevel: "LOW" | "MEDIUM" | "HIGH";
 }
 // Library, Cafeteria, Gym all implement this interface
 ```
@@ -576,7 +647,7 @@ interface Zone {
 public class AuthController {
     private final AuthService authService;  // Injected by Spring
     private final AuditLogService auditLogService;  // Injected by Spring
-    
+
     // No manual instantiation needed
     // Spring manages object lifecycle
 }
@@ -591,6 +662,7 @@ public class AuthService {
 ```
 
 **Benefits**:
+
 - Loose coupling between components
 - Easy unit testing with mock objects
 - Flexible configuration management
@@ -599,14 +671,14 @@ public class AuthService {
 
 ### Summary Table
 
-| Principle | Where Applied | Example |
-|-----------|---------------|---------|
-| **Encapsulation** | Model classes | `Zone.activeUsers` is private, accessed via methods |
-| **Abstraction** | Service layer, DTOs | `CrowdService.getQuietestZone()` hides complexity |
-| **Inheritance** | Repositories, Serializable | `UserRepository extends JpaRepository` |
-| **Polymorphism** | Enums, ResponseEntity | `AuditAction` enum handles multiple action types |
-| **Separation of Concerns** | Layered architecture | Controller → Service → Repository |
-| **Dependency Injection** | Spring annotations | `@RequiredArgsConstructor`, `@Service`, `@Repository` |
+| Principle                  | Where Applied              | Example                                               |
+| -------------------------- | -------------------------- | ----------------------------------------------------- |
+| **Encapsulation**          | Model classes              | `Zone.activeUsers` is private, accessed via methods   |
+| **Abstraction**            | Service layer, DTOs        | `CrowdService.getQuietestZone()` hides complexity     |
+| **Inheritance**            | Repositories, Serializable | `UserRepository extends JpaRepository`                |
+| **Polymorphism**           | Enums, ResponseEntity      | `AuditAction` enum handles multiple action types      |
+| **Separation of Concerns** | Layered architecture       | Controller → Service → Repository                     |
+| **Dependency Injection**   | Spring annotations         | `@RequiredArgsConstructor`, `@Service`, `@Repository` |
 
 ---
 
