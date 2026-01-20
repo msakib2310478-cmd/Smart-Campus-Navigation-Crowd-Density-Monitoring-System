@@ -1,0 +1,39 @@
+version: '3.8'
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    volumes:
+      - ../..:/workspaces:cached
+      - maven-cache:/home/vscode/.m2
+      - npm-cache:/home/vscode/.npm
+      - node-modules-cache:/workspaces/${localWorkspaceFolderBasename}/frontend/node_modules
+    
+    # Overrides default command so things don't shut down after the process ends
+    command: sleep infinity
+    
+    # Required for ptrace-based debuggers like C++, Go, and Rust
+    cap_add:
+      - SYS_PTRACE
+    security_opt:
+      - seccomp:unconfined
+    
+    # Network configuration
+    network_mode: host
+    
+    # Environment variables
+    environment:
+      - JAVA_HOME=/usr/local/sdkman/candidates/java/current
+      - MAVEN_OPTS=-Xmx1024m
+      - NODE_ENV=development
+      - TZ=UTC
+
+volumes:
+  maven-cache:
+    name: campus-nav-maven-cache
+  npm-cache:
+    name: campus-nav-npm-cache
+  node-modules-cache:
+    name: campus-nav-node-modules
