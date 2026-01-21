@@ -10,6 +10,140 @@ A smart campus system that tracks real-time crowd density across locations like 
 - **Recommendations**: Get suggestions for less busy locations
 - **Issue Reporting**: Report problems or issues at specific zones
 - **Admin Dashboard**: Simulation controls for testing crowd scenarios in real-time
+- **Automatic Location Detection**: GPS-based geofencing automatically detects zone entry/exit
+- **OpenStreetMap Integration**: Interactive maps using Leaflet.js with no API costs
+
+---
+
+## Automatic Location Detection
+
+### Overview
+
+This system implements **automatic location-based zone detection** using the browser's Geolocation API combined with custom geofencing logic. Unlike traditional systems that require users to manually check in/out of locations, this approach automatically detects when a user enters or exits a campus zone based on their GPS coordinates.
+
+### Why OpenStreetMap + Leaflet.js?
+
+The system uses **OpenStreetMap (OSM)** with **Leaflet.js** for map visualization. This technology choice was made based on the following considerations:
+
+| Factor                 | OpenStreetMap + Leaflet                | Google Maps API                               |
+| ---------------------- | -------------------------------------- | --------------------------------------------- |
+| **Cost**               | Free and open-source                   | Requires billing account, charges per request |
+| **Privacy**            | No data sent to third parties          | User location data processed by Google        |
+| **Customization**      | Full control over styling and behavior | Limited by Google's terms of service          |
+| **Offline Capability** | Can cache tiles for offline use        | Requires constant internet connection         |
+| **Academic Use**       | No licensing restrictions              | Commercial terms may apply                    |
+
+OpenStreetMap provides accurate campus-level mapping data while ensuring that all location processing occurs client-side, preserving user privacy.
+
+### How Geofencing Works
+
+The geofencing system operates through the following process:
+
+#### 1. Continuous Location Tracking
+
+```
+Browser Geolocation API (navigator.geolocation.watchPosition)
+    ↓
+Real-time latitude/longitude updates
+    ↓
+useGeolocation Hook (React)
+```
+
+The system uses `watchPosition()` for continuous tracking rather than `getCurrentPosition()` to ensure real-time detection of zone transitions.
+
+#### 2. Distance Calculation (Haversine Formula)
+
+To determine if a user is inside a zone, the system calculates the great-circle distance between the user's position and each zone's center using the **Haversine formula**:
+
+```
+a = sin²(Δφ/2) + cos(φ₁) · cos(φ₂) · sin²(Δλ/2)
+c = 2 · atan2(√a, √(1−a))
+d = R · c
+```
+
+Where:
+
+- `φ` = latitude in radians
+- `λ` = longitude in radians
+- `R` = Earth's radius (6,371 km)
+- `d` = distance between two points
+
+If `d ≤ zone.radius`, the user is considered inside the zone.
+
+#### 3. Zone Transition Detection
+
+```
+┌─────────────────────────────────────────────────────┐
+│                  Location Update                     │
+└─────────────────────┬───────────────────────────────┘
+                      ↓
+┌─────────────────────────────────────────────────────┐
+│  Calculate distance to all zones (Haversine)        │
+└─────────────────────┬───────────────────────────────┘
+                      ↓
+┌─────────────────────────────────────────────────────┐
+│  Determine active zone (closest if overlapping)     │
+└─────────────────────┬───────────────────────────────┘
+                      ↓
+┌─────────────────────────────────────────────────────┐
+│  Compare with previous active zone                  │
+│  ├── Different zone? → Trigger EXIT + ENTER events  │
+│  └── Same zone? → No action (prevent duplicates)    │
+└─────────────────────┬───────────────────────────────┘
+                      ↓
+┌─────────────────────────────────────────────────────┐
+│  Update backend via REST API                        │
+│  POST /api/location/update                          │
+└─────────────────────────────────────────────────────┘
+```
+
+#### 4. Hysteresis Buffer
+
+To prevent rapid enter/exit events when a user is near a zone boundary (GPS jitter), the system implements a **hysteresis buffer** of 5 meters:
+
+- **Entering**: User must be within `zone.radius` meters
+- **Exiting**: User must be beyond `zone.radius + 5` meters
+
+This prevents false triggers caused by GPS accuracy fluctuations.
+
+### Privacy Considerations
+
+This system was designed with privacy as a primary concern:
+
+| Aspect                        | Implementation                                                                                     |
+| ----------------------------- | -------------------------------------------------------------------------------------------------- |
+| **Client-side Processing**    | All geofencing calculations occur in the browser; raw GPS coordinates are never sent to the server |
+| **Minimal Data Transmission** | Only zone name and action (ENTER/EXIT) are transmitted to the backend                              |
+| **No Location History**       | The server does not store historical location data or movement patterns                            |
+| **User Control**              | Location tracking only activates with explicit user consent via browser permission                 |
+| **No Third-party APIs**       | No location data is sent to external services (Google, etc.)                                       |
+| **Opt-out Capability**        | Users can disable tracking at any time; manual check-in remains available                          |
+
+#### Data Flow
+
+```
+┌──────────────────┐     ┌──────────────────┐     ┌──────────────────┐
+│  User's Device   │     │   Frontend App   │     │  Backend Server  │
+│  (GPS Sensor)    │     │  (React + TS)    │     │  (Spring Boot)   │
+└────────┬─────────┘     └────────┬─────────┘     └────────┬─────────┘
+         │                        │                        │
+         │  GPS Coordinates       │                        │
+         │───────────────────────>│                        │
+         │                        │                        │
+         │                        │  Geofencing Logic      │
+         │                        │  (Haversine calc)      │
+         │                        │                        │
+         │                        │  Zone: "Library"       │
+         │                        │  Action: "ENTER"       │
+         │                        │───────────────────────>│
+         │                        │                        │
+         │                        │                        │  Update crowd count
+         │                        │                        │
+```
+
+**Note**: Raw latitude/longitude coordinates remain on the client device. The server only receives the zone name and action type.
+
+---
 
 ## Architecture
 
@@ -34,15 +168,64 @@ A smart campus system that tracks real-time crowd density across locations like 
 
 This project includes a fully configured dev container that automatically sets up all dependencies.
 
-#### Using GitHub Codespaces
+#### Running in GitHub Codespaces
 
-1. Click the **"Code"** button on GitHub
-2. Select **"Codespaces"** tab
-3. Click **"Create codespace on main"**
-4. Wait for the container to build (first time takes ~3-5 minutes)
-5. Everything is ready! Use the helper scripts below.
+GitHub Codespaces provides a complete cloud-based development environment. This is the recommended approach for academic evaluation and testing.
 
-#### Using VS Code Dev Containers
+**Step 1: Create a Codespace**
+
+1. Navigate to the repository on GitHub
+2. Click the green **"Code"** button
+3. Select the **"Codespaces"** tab
+4. Click **"Create codespace on main"**
+
+**Step 2: Wait for Environment Setup**
+
+The first build takes approximately 3-5 minutes. The dev container will:
+
+- Install Java 17 and Maven
+- Install Node.js 20 and npm
+- Install all project dependencies
+- Configure VS Code extensions
+
+**Step 3: Start the Application**
+
+Once the environment is ready, open the integrated terminal and run:
+
+```bash
+# Start both backend and frontend
+./start-all.sh
+```
+
+Or start them separately:
+
+```bash
+# Terminal 1: Start backend (Spring Boot on port 8080)
+./start-backend.sh
+
+# Terminal 2: Start frontend (Vite on port 5173)
+./start-frontend.sh
+```
+
+**Step 4: Access the Application**
+
+When the servers start, Codespaces will show a notification with port forwarding options:
+
+- **Frontend**: Click "Open in Browser" for port 5173
+- **Backend API**: Port 8080 (accessible via the frontend proxy)
+
+**Step 5: Test Location Features**
+
+To test the automatic location detection:
+
+1. Open the Live Map page
+2. Click "Start Tracking" to enable location services
+3. Grant location permission when prompted
+4. Your position will appear on the map (simulated in Codespaces)
+
+> **Note**: In Codespaces, the browser may use approximate location. For accurate GPS testing, deploy to a mobile device or use browser developer tools to simulate coordinates.
+
+#### Using VS Code Dev Containers (Local)
 
 1. Install [Docker](https://www.docker.com/) and [VS Code Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 2. Open the project in VS Code

@@ -42,39 +42,99 @@ public class CrowdService {
             }
 
             if ("ENTER".equalsIgnoreCase(action)) {
-                // Automatically exit from previous zone if user is already in one
-                String previousZone = userCurrentZone.get(userId);
-                boolean autoExited = false;
-                
-                if (previousZone != null && !previousZone.equals(zoneName)) {
-                    Zone prevZone = zones.get(previousZone);
-                    if (prevZone != null) {
-                        prevZone.removeUser(userId);
-                        autoExited = true;
-                        log.info("User {} auto-exited from {} before entering {}", userId, previousZone, zoneName);
-                    }
-                }
-                
-                zone.addUser(userId);
-                userCurrentZone.put(userId, zoneName);
-                log.info("User {} entered {}", userId, zoneName);
-                
-                String message = autoExited 
-                    ? String.format("Automatically exited from %s and entered %s", previousZone, zoneName)
-                    : String.format("Successfully entered %s", zoneName);
-                    
-                return new LocationUpdateResponse(message, zoneName, autoExited ? previousZone : null, autoExited);
-                
+                return handleEnter(userId, zoneName, zone);
             } else if ("EXIT".equalsIgnoreCase(action)) {
-                zone.removeUser(userId);
-                userCurrentZone.remove(userId);
-                log.info("User {} exited {}", userId, zoneName);
-                return new LocationUpdateResponse(String.format("Successfully exited %s", zoneName), null, zoneName, false);
+                return handleExit(userId, zoneName, zone);
             }
-            
+
             return new LocationUpdateResponse("Invalid action", userCurrentZone.get(userId), null, false);
         } finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Handle user entering a zone with safety checks:
+     * - Ignores duplicate enter if user already in this zone
+     * - Auto-exits from previous zone if in different zone
+     */
+    private LocationUpdateResponse handleEnter(String userId, String zoneName, Zone zone) {
+        String previousZone = userCurrentZone.get(userId);
+
+        // SAFETY: Ignore duplicate enter - user already in this zone
+        if (zoneName.equals(previousZone)) {
+            log.debug("User {} already in zone {}, ignoring duplicate enter", userId, zoneName);
+            return new LocationUpdateResponse(
+                String.format("Already in %s", zoneName),
+                zoneName,
+                null,
+                false
+            );
+        }
+
+        boolean autoExited = false;
+
+        // Auto-exit from previous zone if user is in a different zone
+        if (previousZone != null) {
+            Zone prevZone = zones.get(previousZone);
+            if (prevZone != null && prevZone.hasUser(userId)) {
+                prevZone.safeRemoveUser(userId);
+                autoExited = true;
+                log.info("User {} auto-exited from {} before entering {}", userId, previousZone, zoneName);
+            }
+        }
+
+        // Add user to new zone
+        zone.addUser(userId);
+        userCurrentZone.put(userId, zoneName);
+        log.info("User {} entered {}", userId, zoneName);
+
+        String message = autoExited
+            ? String.format("Automatically exited from %s and entered %s", previousZone, zoneName)
+            : String.format("Successfully entered %s", zoneName);
+
+        return new LocationUpdateResponse(message, zoneName, autoExited ? previousZone : null, autoExited);
+    }
+
+    /**
+     * Handle user exiting a zone with safety checks:
+     * - Ignores exit if user is not in this zone
+     * - Prevents negative crowd counts
+     */
+    private LocationUpdateResponse handleExit(String userId, String zoneName, Zone zone) {
+        String currentZone = userCurrentZone.get(userId);
+
+        // SAFETY: Ignore exit if user is not in this zone
+        if (!zoneName.equals(currentZone)) {
+            log.debug("User {} not in zone {}, ignoring exit request", userId, zoneName);
+            return new LocationUpdateResponse(
+                String.format("Not in %s, cannot exit", zoneName),
+                currentZone,
+                null,
+                false
+            );
+        }
+
+        // SAFETY: Only remove if user is actually in the zone (prevents negative count)
+        if (zone.hasUser(userId)) {
+            zone.safeRemoveUser(userId);
+            userCurrentZone.remove(userId);
+            log.info("User {} exited {}", userId, zoneName);
+            return new LocationUpdateResponse(
+                String.format("Successfully exited %s", zoneName),
+                null,
+                zoneName,
+                false
+            );
+        } else {
+            log.warn("User {} not found in zone {} active users, cleaning up state", userId, zoneName);
+            userCurrentZone.remove(userId);
+            return new LocationUpdateResponse(
+                String.format("Cleaned up stale state for %s", zoneName),
+                null,
+                zoneName,
+                false
+            );
         }
     }
 
