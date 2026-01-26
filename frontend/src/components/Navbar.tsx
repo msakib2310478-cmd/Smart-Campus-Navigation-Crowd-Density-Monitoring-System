@@ -1,6 +1,6 @@
-import React from "react";
-import { Link, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
+import React from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { useAuth } from '../context/AuthContext';
 
 export const Navbar: React.FC = () => {
   const { isAuthenticated, user, logout } = useAuth();
@@ -8,7 +8,7 @@ export const Navbar: React.FC = () => {
 
   const handleLogout = () => {
     logout();
-    navigate("/");
+    navigate('/');
   };
 
   return (
@@ -22,34 +22,22 @@ export const Navbar: React.FC = () => {
           <div className="flex space-x-4 items-center">
             {isAuthenticated ? (
               <>
-                <Link
-                  to="/dashboard"
-                  className="text-white hover:text-cyan-200 transition"
-                >
+                <Link to="/dashboard" className="text-white hover:text-cyan-200 transition">
                   Dashboard
                 </Link>
-                <Link
-                  to="/scanner"
-                  className="text-white hover:text-cyan-200 transition flex items-center gap-1"
-                >
+                <Link to="/scanner" className="text-white hover:text-cyan-200 transition flex items-center gap-1">
                   <span>📸</span> Scanner
                 </Link>
-                <Link
-                  to="/statistics"
-                  className="text-white hover:text-cyan-200 transition"
-                >
+                <Link to="/map" className="text-white hover:text-cyan-200 transition">
+                  Live Map
+                </Link>
+                <Link to="/statistics" className="text-white hover:text-cyan-200 transition">
                   Statistics
                 </Link>
-                <Link
-                  to="/qr-codes"
-                  className="text-white hover:text-cyan-200 transition"
-                >
+                <Link to="/qr-codes" className="text-white hover:text-cyan-200 transition">
                   QR Codes
                 </Link>
-                <Link
-                  to="/profile"
-                  className="text-white hover:text-cyan-200 transition"
-                >
+                <Link to="/profile" className="text-white hover:text-cyan-200 transition">
                   {user?.fullName}
                 </Link>
                 <button

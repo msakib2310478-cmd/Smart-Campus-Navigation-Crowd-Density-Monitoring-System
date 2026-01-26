@@ -1,16 +1,17 @@
-import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import { PrivateRoute } from "./components/PrivateRoute";
-import { HomePage } from "./pages/HomePage";
-import { SignupPage } from "./pages/SignupPage";
-import { LoginPage } from "./pages/LoginPage";
-import { DashboardPage } from "./pages/DashboardPage";
-import { StatisticsPage } from "./pages/StatisticsPage";
-import { RecommendationPage } from "./pages/RecommendationPage";
-import { ProfilePage } from "./pages/ProfilePage";
-import { QRCodesPage } from "./pages/QRCodesPage";
-import { QRScannerPage } from "./pages/QRScannerPage";
-import "./index.css";
+import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { AuthProvider } from './context/AuthContext';
+import { PrivateRoute } from './components/PrivateRoute';
+import { HomePage } from './pages/HomePage';
+import { SignupPage } from './pages/SignupPage';
+import { LoginPage } from './pages/LoginPage';
+import { DashboardPage } from './pages/DashboardPage';
+import { LiveMapPage } from './pages/LiveMapPage';
+import { StatisticsPage } from './pages/StatisticsPage';
+import { RecommendationPage } from './pages/RecommendationPage';
+import { ProfilePage } from './pages/ProfilePage';
+import { QRCodesPage } from './pages/QRCodesPage';
+import { QRScannerPage } from './pages/QRScannerPage';
+import './index.css';
 
 function App() {
   return (
@@ -25,6 +26,7 @@ function App() {
             {/* Private Routes */}
             <Route element={<PrivateRoute />}>
               <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/map" element={<LiveMapPage />} />
               <Route path="/statistics" element={<StatisticsPage />} />
               <Route path="/recommend" element={<RecommendationPage />} />
               <Route path="/profile" element={<ProfilePage />} />

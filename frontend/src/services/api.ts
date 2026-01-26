@@ -4,7 +4,12 @@ import {
   Zone,
   LocationUpdate,
   LocationUpdateResponse,
+  ZoneWithCoordinates,
 } from "../types";
+import {
+  ZONE_COORDINATES,
+  ZoneCoordinateConfig,
+} from "../config/zoneCoordinates";
 
 const API_BASE_URL = "/api";
 
@@ -93,6 +98,41 @@ export const locationAPI = {
   getQuietestZone: () => api.get<Zone>("/location/quiet"),
   getUserCurrentZone: (userId: string) =>
     api.get<{ currentZone: string | null }>(`/location/current/${userId}`),
+};
+
+// Zones API - fetches zones with coordinates for map display
+export const zonesAPI = {
+  /**
+   * Get all zones with their geographic coordinates
+   * Merges backend zone data with local coordinate configuration
+   */
+  getZonesWithCoordinates: async (): Promise<ZoneWithCoordinates[]> => {
+    const response = await api.get<Zone[]>("/location/crowd");
+    const zones = response.data;
+
+    // Merge backend zone data with local coordinates
+    return zones
+      .map((zone, index) => {
+        const coords: ZoneCoordinateConfig | undefined =
+          ZONE_COORDINATES[zone.name];
+        if (!coords) {
+          console.warn(`No coordinates configured for zone: ${zone.name}`);
+          return null;
+        }
+        return {
+          id: index + 1,
+          name: zone.name,
+          latitude: coords.latitude,
+          longitude: coords.longitude,
+          radius: coords.radius,
+          capacity: zone.capacity,
+          currentCount: zone.currentCount,
+          occupancyPercentage: zone.occupancyPercentage,
+          crowdLevel: zone.crowdLevel,
+        };
+      })
+      .filter((zone): zone is ZoneWithCoordinates => zone !== null);
+  },
 };
 
 // Recommendation APIs
