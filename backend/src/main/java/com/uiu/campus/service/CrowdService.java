@@ -15,6 +15,7 @@ public class CrowdService {
     private static final Map<String, Zone> zones = new ConcurrentHashMap<>();
     private static final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private static final CrowdBackupUtil backupUtil = new CrowdBackupUtil();
+    private static final Map<String, String> userToZone = new ConcurrentHashMap<>();
 
     public CrowdService() {
         initializeZones();
@@ -40,11 +41,31 @@ public class CrowdService {
             }
 
             if ("ENTER".equalsIgnoreCase(action)) {
+                // Check if user is already in another zone
+                String currentZoneName = userToZone.get(userId);
+                if (currentZoneName != null && !currentZoneName.equals(zoneName)) {
+                    // Remove from previous zone
+                    Zone previousZone = zones.get(currentZoneName);
+                    if (previousZone != null) {
+                        previousZone.removeUser(userId);
+                        log.info("User {} automatically exited from {}", userId, currentZoneName);
+                    }
+                }
+                // Add to new zone
                 zone.addUser(userId);
+                userToZone.put(userId, zoneName);
                 log.info("User {} entered {}", userId, zoneName);
             } else if ("EXIT".equalsIgnoreCase(action)) {
-                zone.removeUser(userId);
-                log.info("User {} exited {}", userId, zoneName);
+                // Remove from current zone
+                String currentZoneName = userToZone.get(userId);
+                if (currentZoneName != null) {
+                    Zone currentZone = zones.get(currentZoneName);
+                    if (currentZone != null) {
+                        currentZone.removeUser(userId);
+                    }
+                    userToZone.remove(userId);
+                    log.info("User {} exited {}", userId, currentZoneName);
+                }
             }
         } finally {
             lock.writeLock().unlock();
@@ -108,6 +129,13 @@ public class CrowdService {
             try {
                 zones.clear();
                 zones.putAll(restoredData);
+                // Rebuild userToZone mapping
+                userToZone.clear();
+                for (Zone zone : zones.values()) {
+                    for (String userId : zone.getActiveUsers()) {
+                        userToZone.put(userId, zone.getName());
+                    }
+                }
                 log.info("Crowd data restored successfully");
             } finally {
                 lock.writeLock().unlock();
