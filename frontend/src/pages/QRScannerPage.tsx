@@ -4,7 +4,6 @@ import { locationAPI } from "../services/api";
 import { useAuth } from "../context/AuthContext";
 import { Navbar } from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
-import { LocationUpdateResponse } from "../types";
 
 interface QRData {
   zone: string;
@@ -21,29 +20,10 @@ export const QRScannerPage: React.FC = () => {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [lastScanned, setLastScanned] = useState<QRData | null>(null);
-  const [_processing, setProcessing] = useState(false);
-  const [currentZone, setCurrentZone] = useState<string | null>(null);
-  const [autoExitInfo, setAutoExitInfo] = useState<string | null>(null);
   const scannerRef = useRef<Html5Qrcode | null>(null);
   const processingRef = useRef(false);
   const { user } = useAuth();
   const navigate = useNavigate();
-
-  // Fetch user's current zone on mount
-  useEffect(() => {
-    const fetchCurrentZone = async () => {
-      if (user) {
-        try {
-          const userId = user.studentId ?? String(user.userId);
-          const response = await locationAPI.getUserCurrentZone(userId);
-          setCurrentZone(response.data.currentZone);
-        } catch (err) {
-          console.error("Failed to fetch current zone:", err);
-        }
-      }
-    };
-    fetchCurrentZone();
-  }, [user]);
 
   const stopScanning = useCallback(async () => {
     if (scannerRef.current) {
@@ -128,10 +108,8 @@ export const QRScannerPage: React.FC = () => {
         return;
       }
 
-      setProcessing(true);
       setLastScanned(data);
       setError("");
-      setAutoExitInfo(null);
 
       // Stop scanning
       await stopScanning();
@@ -139,40 +117,25 @@ export const QRScannerPage: React.FC = () => {
       // Update location
       if (!user) {
         setError("Please log in first");
-        setProcessing(false);
         processingRef.current = false;
         return;
       }
 
       try {
-        const response = await locationAPI.updateLocation({
+        await locationAPI.updateLocation({
           userId: user.studentId ?? String(user.userId),
           zoneName: data.zone,
           action: data.action,
         });
 
-        const result: LocationUpdateResponse = response.data;
-
-        // Update current zone state
-        setCurrentZone(result.currentZone);
-
-        // Build success message
-        if (result.autoExited && result.previousZone) {
-          setAutoExitInfo(`Automatically exited from ${result.previousZone}`);
-          setSuccess(
-            `Successfully entered ${data.zone}! You were automatically checked out from ${result.previousZone}.`,
-          );
-        } else {
-          setSuccess(
-            `Successfully ${data.action === "ENTER" ? "entered" : "exited"} ${data.zone}! ` +
-              "Crowd count has been updated.",
-          );
-        }
+        setSuccess(
+          `Successfully ${data.action === "ENTER" ? "entered" : "exited"} ${data.zone}! ` +
+            "Crowd count has been updated.",
+        );
       } catch (err: any) {
         setError(err?.response?.data?.message || "Failed to update location");
       }
 
-      setProcessing(false);
       processingRef.current = false;
     } catch (err) {
       setError(
@@ -213,7 +176,6 @@ export const QRScannerPage: React.FC = () => {
     setLastScanned(null);
     setSuccess("");
     setError("");
-    setAutoExitInfo(null);
     startScanning();
   };
 
@@ -226,33 +188,6 @@ export const QRScannerPage: React.FC = () => {
           <p className="text-gray-600 mb-8">
             Scan zone QR codes to update your location
           </p>
-
-          {/* Current Zone Status */}
-          <div
-            className={`px-6 py-4 rounded-lg mb-6 ${
-              currentZone
-                ? "bg-teal-100 border border-teal-400 text-teal-800"
-                : "bg-gray-100 border border-gray-300 text-gray-600"
-            }`}
-          >
-            <div className="flex items-center gap-3">
-              <span className="text-2xl">{currentZone ? "📍" : "🚶"}</span>
-              <div>
-                <h3 className="font-bold">Current Location</h3>
-                <p>
-                  {currentZone
-                    ? `You are currently in: ${currentZone}`
-                    : "You are not checked into any zone"}
-                </p>
-                {currentZone && (
-                  <p className="text-sm mt-1 text-teal-600">
-                    💡 Scanning an ENTER QR for a different zone will
-                    automatically check you out from here.
-                  </p>
-                )}
-              </div>
-            </div>
-          </div>
 
           {/* Permission Status */}
           {permissionGranted === false && (
@@ -274,19 +209,6 @@ export const QRScannerPage: React.FC = () => {
           {error && (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-6">
               {error}
-            </div>
-          )}
-
-          {/* Auto-Exit Info */}
-          {autoExitInfo && (
-            <div className="bg-amber-100 border border-amber-400 text-amber-800 px-6 py-4 rounded-lg mb-6">
-              <div className="flex items-center gap-3">
-                <span className="text-2xl">🔄</span>
-                <div>
-                  <h3 className="font-bold">Auto Checkout</h3>
-                  <p>{autoExitInfo}</p>
-                </div>
-              </div>
             </div>
           )}
 

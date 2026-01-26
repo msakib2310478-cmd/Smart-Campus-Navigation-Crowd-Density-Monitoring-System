@@ -45,46 +45,16 @@ public class Zone implements Serializable {
         }
     }
 
-    /**
-     * Add a user to this zone.
-     * Uses Set so duplicates are automatically ignored.
-     * @return true if user was added, false if already present
-     */
-    public boolean addUser(String userId) {
-        boolean added = activeUsers.add(userId);
-        if (added) {
-            updateCrowdLevel();
-        }
-        return added;
+    public void addUser(String userId) {
+        activeUsers.add(userId);
+        updateCrowdLevel();
     }
 
-    /**
-     * Remove a user from this zone.
-     * @return true if user was removed, false if not present
-     */
-    public boolean removeUser(String userId) {
-        boolean removed = activeUsers.remove(userId);
-        if (removed) {
-            updateCrowdLevel();
-        }
-        return removed;
+    public void removeUser(String userId) {
+        activeUsers.remove(userId);
+        updateCrowdLevel();
     }
 
-    /**
-     * Safely remove a user, preventing negative counts.
-     * Only removes if user is present and count > 0.
-     * @return true if user was removed, false otherwise
-     */
-    public boolean safeRemoveUser(String userId) {
-        if (activeUsers.contains(userId) && getCurrentCount() > 0) {
-            return removeUser(userId);
-        }
-        return false;
-    }
-
-    /**
-     * Check if a user is currently in this zone.
-     */
     public boolean hasUser(String userId) {
         return activeUsers.contains(userId);
     }

@@ -1,6 +1,5 @@
 package com.uiu.campus.controller;
 
-import com.uiu.campus.dto.LocationUpdateResponse;
 import com.uiu.campus.dto.ZoneDto;
 import com.uiu.campus.model.LocationUpdate;
 import com.uiu.campus.model.Zone;
@@ -9,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.List ;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -23,22 +22,8 @@ public class LocationController {
     @PostMapping("/update")
     public ResponseEntity<?> updateLocation(@RequestBody LocationUpdate update) {
         try {
-            LocationUpdateResponse response = crowdService.updateLocation(
-                update.getUserId(), 
-                update.getZoneName(), 
-                update.getAction()
-            );
-            return ResponseEntity.ok(response);
-        } catch (Exception e) {
-            return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
-        }
-    }
-
-    @GetMapping("/current/{userId}")
-    public ResponseEntity<?> getUserCurrentZone(@PathVariable String userId) {
-        try {
-            String currentZone = crowdService.getUserCurrentZone(userId);
-            return ResponseEntity.ok(new CurrentZoneResponse(currentZone));
+            crowdService.updateLocation(update.getUserId(), update.getZoneName(), update.getAction());
+            return ResponseEntity.ok(new SuccessResponse("Location updated successfully"));
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(new ErrorResponse(e.getMessage()));
         }
@@ -82,5 +67,4 @@ public class LocationController {
 
     record SuccessResponse(String message) {}
     record ErrorResponse(String message) {}
-    record CurrentZoneResponse(String currentZone) {}
 }
