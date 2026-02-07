@@ -1,14 +1,14 @@
-import React from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useAuth } from '../context/AuthContext';
+import React from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export const Navbar: React.FC = () => {
-  const { isAuthenticated, user, logout } = useAuth();
+  const { isAuthenticated, user, logout, isAdmin } = useAuth();
   const navigate = useNavigate();
 
   const handleLogout = () => {
     logout();
-    navigate('/');
+    navigate("/");
   };
 
   return (
@@ -22,23 +22,62 @@ export const Navbar: React.FC = () => {
           <div className="flex space-x-4 items-center">
             {isAuthenticated ? (
               <>
-                <Link to="/dashboard" className="text-white hover:text-cyan-200 transition">
+                <Link
+                  to="/dashboard"
+                  className="text-white hover:text-cyan-200 transition"
+                >
                   Dashboard
                 </Link>
-                <Link to="/scanner" className="text-white hover:text-cyan-200 transition flex items-center gap-1">
+                <Link
+                  to="/scanner"
+                  className="text-white hover:text-cyan-200 transition flex items-center gap-1"
+                >
                   <span>📸</span> Scanner
                 </Link>
-                <Link to="/map" className="text-white hover:text-cyan-200 transition">
+                <Link
+                  to="/map"
+                  className="text-white hover:text-cyan-200 transition"
+                >
                   Live Map
                 </Link>
-                <Link to="/statistics" className="text-white hover:text-cyan-200 transition">
+                <Link
+                  to="/statistics"
+                  className="text-white hover:text-cyan-200 transition"
+                >
                   Statistics
                 </Link>
-                <Link to="/qr-codes" className="text-white hover:text-cyan-200 transition">
+                <Link
+                  to="/qr-codes"
+                  className="text-white hover:text-cyan-200 transition"
+                >
                   QR Codes
                 </Link>
-                <Link to="/profile" className="text-white hover:text-cyan-200 transition">
+                {isAdmin && (
+                  <>
+                    <Link
+                      to="/admin/map"
+                      className="text-yellow-200 hover:text-yellow-100 transition flex items-center gap-1"
+                    >
+                      <span>🗺️</span> Draw Zones
+                    </Link>
+                    <Link
+                      to="/admin/zones"
+                      className="text-yellow-200 hover:text-yellow-100 transition flex items-center gap-1"
+                    >
+                      <span>⚙️</span> Manage
+                    </Link>
+                  </>
+                )}
+                <Link
+                  to="/profile"
+                  className="text-white hover:text-cyan-200 transition"
+                >
                   {user?.fullName}
+                  {isAdmin && (
+                    <span className="ml-1 text-xs text-yellow-200">
+                      (Admin)
+                    </span>
+                  )}
                 </Link>
                 <button
                   onClick={handleLogout}

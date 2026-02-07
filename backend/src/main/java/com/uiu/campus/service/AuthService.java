@@ -28,6 +28,9 @@ public class AuthService {
     private static final String EMAIL_PATTERN = "^[^@\\s]+@[^@\\s]+\\.[^@\\s]+$";
     private static final String STUDENT_ID_PATTERN = "^\\d{9,11}$";
 
+    // Secret code for admin signup (in production, use environment variable)
+    private static final String ADMIN_SECRET_CODE = "CAMPUS_ADMIN_2026";
+
     public AuthResponse signup(AuthRequest request) {
         return signup(request, null, null);
     }
@@ -37,26 +40,26 @@ public class AuthService {
         try {
             // Validate email or student ID (either is acceptable)
             if (!isValidEmail(request.getEmail()) && !isValidStudentId(request.getStudentId())) {
-                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent, 
+                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent,
                         false, "Invalid email or student ID format");
                 throw new IllegalArgumentException("Provide a valid email address or a 9-11 digit student ID");
             }
 
             // Validate password strength
             if (!PasswordValidator.isValid(request.getPassword())) {
-                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent, 
+                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent,
                         false, "Password does not meet requirements");
                 throw new IllegalArgumentException(PasswordValidator.getRequirements());
             }
 
             // Check if user already exists
             if (request.getEmail() != null && userRepository.existsByEmail(request.getEmail())) {
-                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent, 
+                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent,
                         false, "Email already registered");
                 throw new IllegalArgumentException("Email already registered");
             }
             if (request.getStudentId() != null && userRepository.existsByStudentId(request.getStudentId())) {
-                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent, 
+                auditLogService.logAuthEvent(null, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent,
                         false, "Student ID already registered");
                 throw new IllegalArgumentException("Student ID already registered");
             }
@@ -68,19 +71,27 @@ public class AuthService {
             user.setFullName(request.getFullName());
             user.setPassword(passwordEncoder.encode(request.getPassword()));
 
+            // Check if admin code is provided and valid
+            if (request.getAdminCode() != null && ADMIN_SECRET_CODE.equals(request.getAdminCode())) {
+                user.setRole(com.uiu.campus.model.Role.ADMIN);
+                log.info("Creating new ADMIN user: {}",
+                        request.getEmail() != null ? request.getEmail() : request.getStudentId());
+            }
+
             user = userRepository.save(user);
             userId = user.getId();
             log.info("User signed up: {}", user.getId());
 
             String token = jwtTokenProvider.generateToken(user.getId().toString());
-            
-            auditLogService.logAuthEvent(user.getId(), AuditLog.AuditAction.SIGNUP, ipAddress, userAgent, 
+
+            auditLogService.logAuthEvent(user.getId(), AuditLog.AuditAction.SIGNUP, ipAddress, userAgent,
                     true, null);
-            
-            return new AuthResponse(token, user.getId(), user.getEmail(), user.getStudentId(), user.getFullName());
+
+            return new AuthResponse(token, user.getId(), user.getEmail(), user.getStudentId(), user.getFullName(),
+                    user.getRole().name());
         } catch (IllegalArgumentException e) {
             if (userId != null) {
-                auditLogService.logAuthEvent(userId, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent, 
+                auditLogService.logAuthEvent(userId, AuditLog.AuditAction.SIGNUP, ipAddress, userAgent,
                         false, e.getMessage());
             }
             throw e;
@@ -99,21 +110,24 @@ public class AuthService {
             // Check if login is blocked
             if (loginAttemptService.isBlocked(identifier)) {
                 log.warn("Login attempt for blocked identifier: {}", identifier);
-                auditLogService.logAuthEvent(null, AuditLog.AuditAction.LOGIN_FAILED, ipAddress, userAgent, 
+                auditLogService.logAuthEvent(null, AuditLog.AuditAction.LOGIN_FAILED, ipAddress, userAgent,
                         false, "Account temporarily blocked due to multiple failed attempts");
-                throw new IllegalArgumentException("Account temporarily blocked due to multiple failed login attempts. Please try again later.");
+                throw new IllegalArgumentException(
+                        "Account temporarily blocked due to multiple failed login attempts. Please try again later.");
             }
 
             if (request.getEmail() != null && !request.getEmail().isEmpty()) {
                 Optional<User> optionalUser = userRepository.findByEmail(request.getEmail());
-                if (optionalUser.isPresent() && passwordEncoder.matches(request.getPassword(), optionalUser.get().getPassword())) {
+                if (optionalUser.isPresent()
+                        && passwordEncoder.matches(request.getPassword(), optionalUser.get().getPassword())) {
                     user = optionalUser.get();
                 }
             }
 
             if (user == null && request.getStudentId() != null && !request.getStudentId().isEmpty()) {
                 Optional<User> optionalUser = userRepository.findByStudentId(request.getStudentId());
-                if (optionalUser.isPresent() && passwordEncoder.matches(request.getPassword(), optionalUser.get().getPassword())) {
+                if (optionalUser.isPresent()
+                        && passwordEncoder.matches(request.getPassword(), optionalUser.get().getPassword())) {
                     user = optionalUser.get();
                 }
             }
@@ -121,10 +135,10 @@ public class AuthService {
             if (user == null) {
                 loginAttemptService.recordLoginAttempt(identifier, false);
                 int remainingAttempts = loginAttemptService.getRemainingAttempts(identifier);
-                
-                auditLogService.logAuthEvent(null, AuditLog.AuditAction.LOGIN_FAILED, ipAddress, userAgent, 
+
+                auditLogService.logAuthEvent(null, AuditLog.AuditAction.LOGIN_FAILED, ipAddress, userAgent,
                         false, "Invalid credentials");
-                
+
                 String errorMsg = "Invalid credentials";
                 if (remainingAttempts > 0 && remainingAttempts < 5) {
                     errorMsg += ". " + remainingAttempts + " attempts remaining before account is temporarily blocked.";
@@ -134,14 +148,15 @@ public class AuthService {
 
             // Successful login
             loginAttemptService.recordLoginAttempt(identifier, true);
-            
+
             log.info("User logged in: {}", user.getId());
             String token = jwtTokenProvider.generateToken(user.getId().toString());
-            
-            auditLogService.logAuthEvent(user.getId(), AuditLog.AuditAction.LOGIN, ipAddress, userAgent, 
+
+            auditLogService.logAuthEvent(user.getId(), AuditLog.AuditAction.LOGIN, ipAddress, userAgent,
                     true, null);
-            
-            return new AuthResponse(token, user.getId(), user.getEmail(), user.getStudentId(), user.getFullName());
+
+            return new AuthResponse(token, user.getId(), user.getEmail(), user.getStudentId(), user.getFullName(),
+                    user.getRole().name());
         } catch (IllegalArgumentException e) {
             throw e;
         }
@@ -160,12 +175,14 @@ public class AuthService {
     }
 
     private boolean isValidEmail(String email) {
-        if (email == null || email.isEmpty()) return false;
+        if (email == null || email.isEmpty())
+            return false;
         return Pattern.matches(EMAIL_PATTERN, email);
     }
 
     private boolean isValidStudentId(String studentId) {
-        if (studentId == null || studentId.isEmpty()) return false;
+        if (studentId == null || studentId.isEmpty())
+            return false;
         return Pattern.matches(STUDENT_ID_PATTERN, studentId);
     }
 }

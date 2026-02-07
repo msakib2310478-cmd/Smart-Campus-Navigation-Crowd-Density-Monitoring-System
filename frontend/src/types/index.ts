@@ -13,10 +13,48 @@ export interface ZoneWithCoordinates {
   latitude: number;
   longitude: number;
   radius: number; // meters
+  floor?: number;
+  polygon?: PolygonPoint[];
   capacity: number;
   currentCount: number;
   occupancyPercentage: number;
   crowdLevel: "LOW" | "MEDIUM" | "HIGH";
+}
+
+// Admin zone response from API
+export interface AdminZone {
+  id: number;
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  floor: number;
+  polygon?: PolygonPoint[];
+  capacity: number;
+  description?: string;
+  currentCount: number;
+  occupancyPercentage: number;
+  crowdLevel: "LOW" | "MEDIUM" | "HIGH";
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+// Request for creating/updating zones
+export interface ZoneRequest {
+  name: string;
+  latitude: number;
+  longitude: number;
+  radius: number;
+  floor: number;
+  polygon?: PolygonPoint[];
+  capacity: number;
+  description?: string;
+}
+
+// Polygon vertex with explicit latitude/longitude
+export interface PolygonPoint {
+  latitude: number;
+  longitude: number;
 }
 
 // Geographic types for location-based features
@@ -48,6 +86,7 @@ export interface User {
   email: string;
   studentId: string;
   fullName: string;
+  role: "USER" | "ADMIN";
 }
 
 export interface AuthResponse {
@@ -56,6 +95,7 @@ export interface AuthResponse {
   email: string;
   studentId: string;
   fullName: string;
+  role: "USER" | "ADMIN";
 }
 
 export interface LocationUpdate {

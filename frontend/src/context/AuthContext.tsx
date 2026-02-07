@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
-import { AuthResponse } from '../types';
+import React, { createContext, useContext, useState, useEffect } from "react";
+import { AuthResponse } from "../types";
 
 interface AuthContextType {
   user: AuthResponse | null;
@@ -7,17 +7,20 @@ interface AuthContextType {
   login: (response: AuthResponse) => void;
   logout: () => void;
   isAuthenticated: boolean;
+  isAdmin: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [user, setUser] = useState<AuthResponse | null>(null);
   const [token, setToken] = useState<string | null>(null);
 
   useEffect(() => {
-    const savedToken = localStorage.getItem('token');
-    const savedUser = localStorage.getItem('user');
+    const savedToken = localStorage.getItem("token");
+    const savedUser = localStorage.getItem("user");
     if (savedToken && savedUser) {
       setToken(savedToken);
       setUser(JSON.parse(savedUser));
@@ -27,19 +30,23 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const login = (response: AuthResponse) => {
     setToken(response.token);
     setUser(response);
-    localStorage.setItem('token', response.token);
-    localStorage.setItem('user', JSON.stringify(response));
+    localStorage.setItem("token", response.token);
+    localStorage.setItem("user", JSON.stringify(response));
   };
 
   const logout = () => {
     setToken(null);
     setUser(null);
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem("token");
+    localStorage.removeItem("user");
   };
 
+  const isAdmin = user?.role === "ADMIN";
+
   return (
-    <AuthContext.Provider value={{ user, token, login, logout, isAuthenticated: !!token }}>
+    <AuthContext.Provider
+      value={{ user, token, login, logout, isAuthenticated: !!token, isAdmin }}
+    >
       {children}
     </AuthContext.Provider>
   );
@@ -48,7 +55,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (context === undefined) {
-    throw new Error('useAuth must be used within AuthProvider');
+    throw new Error("useAuth must be used within AuthProvider");
   }
   return context;
 };

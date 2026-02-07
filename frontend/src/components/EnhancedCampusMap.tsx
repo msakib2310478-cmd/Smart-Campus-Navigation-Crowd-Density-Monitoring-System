@@ -3,6 +3,7 @@ import {
   MapContainer,
   TileLayer,
   Circle,
+  Polygon,
   Popup,
   Marker,
   Tooltip,
@@ -169,15 +170,118 @@ export const EnhancedCampusMap: React.FC<EnhancedCampusMapProps> = ({
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
       />
 
-      {/* Zone circles */}
+      {/* Zone shapes (polygon or circle) */}
       {zones.map((zone) => {
         const isActive = zone.name === activeZone;
         const color = getCrowdColor(zone.crowdLevel);
+        const hasPolygon = zone.polygon && zone.polygon.length >= 3;
+
+        // Build popup content shared by both polygon and circle zones
+        const popupContent = (
+          <Popup>
+            <div className="p-1 min-w-[140px]">
+              <h3 className="font-bold text-base mb-2 border-b pb-1">
+                {zone.name}
+                {isActive && (
+                  <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
+                    You're here
+                  </span>
+                )}
+              </h3>
+
+              <div className="space-y-1.5 text-sm">
+                {zone.floor !== undefined && (
+                  <div className="flex justify-between items-center">
+                    <span className="text-gray-600">Floor:</span>
+                    <span className="font-semibold">
+                      {zone.floor === -1 ? "B1" : zone.floor}
+                    </span>
+                  </div>
+                )}
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Crowd:</span>
+                  <span className="font-semibold">
+                    {zone.currentCount} / {zone.capacity}
+                  </span>
+                </div>
+
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="h-2 rounded-full transition-all"
+                    style={{
+                      width: `${Math.min(zone.occupancyPercentage, 100)}%`,
+                      backgroundColor: color,
+                    }}
+                  />
+                </div>
+
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Status:</span>
+                  <span className="font-medium" style={{ color }}>
+                    {getCrowdLabel(zone.crowdLevel)}
+                  </span>
+                </div>
+
+                <div className="flex justify-between items-center text-xs text-gray-500 pt-1 border-t">
+                  <span>Available:</span>
+                  <span>{zone.capacity - zone.currentCount} spots</span>
+                </div>
+              </div>
+            </div>
+          </Popup>
+        );
+
+        if (hasPolygon) {
+          // Render as polygon
+          const positions: [number, number][] = zone.polygon!.map((p) => [
+            p.latitude,
+            p.longitude,
+          ]);
+
+          return (
+            <React.Fragment key={zone.id}>
+              {/* Outer highlight for active zone */}
+              {isActive && (
+                <Polygon
+                  positions={positions}
+                  pathOptions={{
+                    color: "#3b82f6",
+                    fillColor: "transparent",
+                    fillOpacity: 0,
+                    weight: 5,
+                    dashArray: "8, 8",
+                  }}
+                />
+              )}
+
+              {/* Main polygon shape */}
+              <Polygon
+                positions={positions}
+                pathOptions={{
+                  color: isActive ? "#1d4ed8" : color,
+                  fillColor: color,
+                  fillOpacity: isActive ? 0.4 : 0.25,
+                  weight: isActive ? 4 : 2,
+                }}
+                eventHandlers={{
+                  click: () => onZoneClick?.(zone),
+                }}
+              >
+                <Tooltip permanent direction="center" className="zone-label">
+                  <span className="font-semibold text-xs">{zone.name}</span>
+                </Tooltip>
+                {popupContent}
+              </Polygon>
+            </React.Fragment>
+          );
+        }
+
+        // Render as circle (legacy zones)
         const position: [number, number] = [zone.latitude, zone.longitude];
 
         return (
           <React.Fragment key={zone.id}>
-            {/* Outer highlight ring for active zone */}
             {isActive && (
               <Circle
                 center={position}
@@ -192,7 +296,6 @@ export const EnhancedCampusMap: React.FC<EnhancedCampusMapProps> = ({
               />
             )}
 
-            {/* Main zone circle */}
             <Circle
               center={position}
               radius={zone.radius}
@@ -206,59 +309,10 @@ export const EnhancedCampusMap: React.FC<EnhancedCampusMapProps> = ({
                 click: () => onZoneClick?.(zone),
               }}
             >
-              {/* Always-visible tooltip with zone name */}
               <Tooltip permanent direction="center" className="zone-label">
                 <span className="font-semibold text-xs">{zone.name}</span>
               </Tooltip>
-
-              {/* Popup with detailed info */}
-              <Popup>
-                <div className="p-1 min-w-[140px]">
-                  <h3 className="font-bold text-base mb-2 border-b pb-1">
-                    {zone.name}
-                    {isActive && (
-                      <span className="ml-2 text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full">
-                        You're here
-                      </span>
-                    )}
-                  </h3>
-
-                  <div className="space-y-1.5 text-sm">
-                    {/* Crowd count */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Crowd:</span>
-                      <span className="font-semibold">
-                        {zone.currentCount} / {zone.capacity}
-                      </span>
-                    </div>
-
-                    {/* Occupancy bar */}
-                    <div className="w-full bg-gray-200 rounded-full h-2">
-                      <div
-                        className="h-2 rounded-full transition-all"
-                        style={{
-                          width: `${Math.min(zone.occupancyPercentage, 100)}%`,
-                          backgroundColor: color,
-                        }}
-                      />
-                    </div>
-
-                    {/* Crowd level */}
-                    <div className="flex justify-between items-center">
-                      <span className="text-gray-600">Status:</span>
-                      <span className="font-medium" style={{ color }}>
-                        {getCrowdLabel(zone.crowdLevel)}
-                      </span>
-                    </div>
-
-                    {/* Available spots */}
-                    <div className="flex justify-between items-center text-xs text-gray-500 pt-1 border-t">
-                      <span>Available:</span>
-                      <span>{zone.capacity - zone.currentCount} spots</span>
-                    </div>
-                  </div>
-                </div>
-              </Popup>
+              {popupContent}
             </Circle>
           </React.Fragment>
         );

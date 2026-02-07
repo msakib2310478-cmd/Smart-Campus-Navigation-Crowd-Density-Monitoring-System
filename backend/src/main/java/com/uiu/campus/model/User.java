@@ -30,9 +30,17 @@ public class User implements Serializable {
 
     private String fullName;
 
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private Role role = Role.USER;
+
     private LocalDateTime createdAt;
 
     private LocalDateTime updatedAt;
+
+    public boolean isAdmin() {
+        return Role.ADMIN.equals(this.role);
+    }
 
     @PrePersist
     protected void onCreate() {

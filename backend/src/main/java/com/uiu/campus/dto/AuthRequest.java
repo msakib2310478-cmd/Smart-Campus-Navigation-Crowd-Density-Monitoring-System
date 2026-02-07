@@ -12,4 +12,5 @@ public class AuthRequest {
     private String studentId;
     private String password;
     private String fullName; // For signup
+    private String adminCode; // Optional: secret code to signup as admin
 }

@@ -210,4 +210,71 @@ public class CrowdService {
             lock.readLock().unlock();
         }
     }
+
+    /**
+     * Add a new zone or update existing zone capacity.
+     * Used by ZoneService when admin creates/updates zones.
+     */
+    public void addOrUpdateZone(String name, int capacity) {
+        lock.writeLock().lock();
+        try {
+            Zone existing = zones.get(name);
+            if (existing != null) {
+                // Update capacity but preserve active users
+                existing.setCapacity(capacity);
+                existing.updateCrowdLevel();
+                log.info("Zone '{}' capacity updated to {}", name, capacity);
+            } else {
+                zones.put(name, new Zone(name, capacity));
+                log.info("Zone '{}' added with capacity {}", name, capacity);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Remove a zone from tracking.
+     * Used by ZoneService when admin deletes a zone.
+     */
+    public void removeZone(String name) {
+        lock.writeLock().lock();
+        try {
+            Zone removed = zones.remove(name);
+            if (removed != null) {
+                // Also remove users from the zone tracking
+                userCurrentZone.entrySet().removeIf(entry -> name.equals(entry.getValue()));
+                log.info("Zone '{}' removed from tracking", name);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Rename a zone, preserving its active users.
+     * Used by ZoneService when admin renames a zone.
+     */
+    public void renameZone(String oldName, String newName) {
+        lock.writeLock().lock();
+        try {
+            Zone zone = zones.remove(oldName);
+            if (zone != null) {
+                Zone newZone = new Zone(newName, zone.getCapacity());
+                // Preserve active users
+                for (String userId : zone.getActiveUsers()) {
+                    newZone.addUser(userId);
+                }
+                zones.put(newName, newZone);
+
+                // Update user zone tracking
+                userCurrentZone.replaceAll((userId, zoneName) ->
+                    oldName.equals(zoneName) ? newName : zoneName);
+
+                log.info("Zone renamed from '{}' to '{}'", oldName, newName);
+            }
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
 }
