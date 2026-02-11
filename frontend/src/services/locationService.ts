@@ -228,6 +228,22 @@ class LocationService {
   }
 
   /**
+   * Exit the current zone if the user is in one.
+   * Called when the user leaves the UIU campus area.
+   *
+   * @param userId - User's ID or student ID
+   * @returns Promise with the location update response
+   */
+  async exitCurrentZone(
+    userId: string,
+  ): Promise<LocationUpdateResponse | null> {
+    if (!this.currentZone) {
+      return null;
+    }
+    return this.exitZone(userId, this.currentZone);
+  }
+
+  /**
    * Get the currently tracked zone
    */
   getCurrentZone(): string | null {

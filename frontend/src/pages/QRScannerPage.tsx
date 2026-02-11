@@ -5,6 +5,8 @@ import { useAuth } from "../context/AuthContext";
 import { Navbar } from "../components/Navbar";
 import { useNavigate } from "react-router-dom";
 import { LocationUpdateResponse } from "../types";
+import { useGeolocation } from "../hooks/useGeolocation";
+import { isInCampusArea } from "../config/zoneCoordinates";
 
 interface QRData {
   zone: string;
@@ -28,6 +30,10 @@ export const QRScannerPage: React.FC = () => {
   const processingRef = useRef(false);
   const { user } = useAuth();
   const navigate = useNavigate();
+  const { position } = useGeolocation({ autoStart: true });
+
+  const isInsideCampus =
+    position != null && isInCampusArea(position.latitude, position.longitude);
 
   // Fetch user's current zone on mount
   useEffect(() => {
@@ -144,6 +150,15 @@ export const QRScannerPage: React.FC = () => {
         return;
       }
 
+      if (data.action === "ENTER" && !isInsideCampus) {
+        setError(
+          "You must be within the UIU campus area to enter a zone. Please move closer to campus.",
+        );
+        setProcessing(false);
+        processingRef.current = false;
+        return;
+      }
+
       try {
         const response = await locationAPI.updateLocation({
           userId: user.studentId ?? String(user.userId),
@@ -253,6 +268,22 @@ export const QRScannerPage: React.FC = () => {
               </div>
             </div>
           </div>
+
+          {/* Campus Area Warning */}
+          {position != null && !isInsideCampus && (
+            <div className="bg-amber-100 border border-amber-400 text-amber-800 px-6 py-4 rounded-lg mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <h3 className="font-bold">Outside Campus Area</h3>
+                  <p>
+                    You are currently outside the UIU campus area. You must be
+                    on campus to enter a zone via QR code.
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
 
           {/* Permission Status */}
           {permissionGranted === false && (

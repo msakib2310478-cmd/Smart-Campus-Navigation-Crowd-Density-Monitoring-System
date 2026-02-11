@@ -4,6 +4,8 @@ import { Zone } from "../types";
 import { useAuth } from "../context/AuthContext";
 import { Navbar } from "../components/Navbar";
 import { LiveCampusMap } from "../components/LiveCampusMap";
+import { useGeolocation } from "../hooks/useGeolocation";
+import { isInCampusArea } from "../config/zoneCoordinates";
 
 export const LiveMapPage: React.FC = () => {
   const [zones, setZones] = useState<Zone[]>([]);
@@ -15,6 +17,10 @@ export const LiveMapPage: React.FC = () => {
   const [updatingZone, setUpdatingZone] = useState<string | null>(null);
   const [mapMode, setMapMode] = useState<"gps" | "schematic">("gps");
   const { user } = useAuth();
+  const { position } = useGeolocation({ autoStart: true });
+
+  const isInsideCampus =
+    position != null && isInCampusArea(position.latitude, position.longitude);
 
   useEffect(() => {
     fetchCrowdStatus();
@@ -41,6 +47,13 @@ export const LiveMapPage: React.FC = () => {
   const handleUpdate = async (zoneName: string, action: "ENTER" | "EXIT") => {
     if (!user) {
       setActionError("Please log in first");
+      return;
+    }
+
+    if (action === "ENTER" && !isInsideCampus) {
+      setActionError(
+        "You must be within the UIU campus area to enter a zone. Please move closer to campus.",
+      );
       return;
     }
 
@@ -101,6 +114,22 @@ export const LiveMapPage: React.FC = () => {
           {actionMessage && (
             <div className="bg-green-100 border border-green-400 text-green-800 px-4 py-3 rounded mb-6">
               {actionMessage}
+            </div>
+          )}
+
+          {/* Campus Location Status */}
+          {position != null && !isInsideCampus && (
+            <div className="bg-amber-100 border border-amber-400 text-amber-800 px-6 py-4 rounded-lg mb-6">
+              <div className="flex items-center gap-3">
+                <span className="text-2xl">⚠️</span>
+                <div>
+                  <h3 className="font-bold">Outside Campus Area</h3>
+                  <p>
+                    You are currently outside the UIU campus area. You must be
+                    on campus to enter a zone.
+                  </p>
+                </div>
+              </div>
             </div>
           )}
 
@@ -297,12 +326,14 @@ export const LiveMapPage: React.FC = () => {
                   <div className="space-y-3">
                     <button
                       onClick={() => handleUpdate(selectedZone.name, "ENTER")}
-                      disabled={!!updatingZone}
+                      disabled={!!updatingZone || !isInsideCampus}
                       className="w-full bg-teal-600 hover:bg-teal-700 text-white py-3 rounded-lg font-semibold transition disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       {updatingZone === selectedZone.name + "ENTER"
                         ? "Entering Zone..."
-                        : "Enter Zone"}
+                        : !isInsideCampus
+                          ? "Enter Zone (Outside Campus)"
+                          : "Enter Zone"}
                     </button>
                     <button
                       onClick={() => handleUpdate(selectedZone.name, "EXIT")}
@@ -362,7 +393,7 @@ export const LiveMapPage: React.FC = () => {
                 <div className="mt-4 flex gap-3">
                   <button
                     onClick={() => handleUpdate(zone.name, "ENTER")}
-                    disabled={!!updatingZone}
+                    disabled={!!updatingZone || !isInsideCampus}
                     className="flex-1 bg-teal-600 hover:bg-teal-700 text-white py-2 rounded font-semibold transition disabled:opacity-50"
                   >
                     {updatingZone === zone.name + "ENTER"

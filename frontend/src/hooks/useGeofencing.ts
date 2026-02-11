@@ -8,6 +8,7 @@ import {
   ZONE_COORDINATES,
   ZoneCoordinateConfig,
   calculateDistance,
+  isInCampusArea,
 } from "../config/zoneCoordinates";
 
 /**
@@ -69,6 +70,8 @@ export interface UseGeofencingReturn {
   error: { type: string; message: string } | null;
   /** History of geofence events */
   eventHistory: GeofenceEvent[];
+  /** Whether the user is currently inside the UIU campus area */
+  isInsideCampus: boolean;
   /** Start tracking location */
   startTracking: () => void;
   /** Stop tracking location */
@@ -130,6 +133,7 @@ export const useGeofencing = (
     [],
   );
   const [eventHistory, setEventHistory] = useState<GeofenceEvent[]>([]);
+  const [isInsideCampus, setIsInsideCampus] = useState<boolean>(false);
 
   // Refs to track previous state and prevent duplicate events
   const previousActiveZoneRef = useRef<string | null>(null);
@@ -218,6 +222,26 @@ export const useGeofencing = (
 
     const { latitude, longitude } = position;
 
+    // Check if user is inside the UIU campus area
+    const inCampus = isInCampusArea(latitude, longitude);
+    setIsInsideCampus(inCampus);
+
+    // If user is outside campus, auto-exit from any active zone
+    if (!inCampus) {
+      const previousActiveZone = previousActiveZoneRef.current;
+      if (previousActiveZone !== null) {
+        dispatchEvent("EXIT", previousActiveZone, latitude, longitude);
+        setActiveZone(null);
+        previousActiveZoneRef.current = null;
+      }
+      // Clear zone inside states
+      isInsideMapRef.current.clear();
+      setZonesWithDistance((prev) =>
+        prev.map((z) => ({ ...z, isInside: false })),
+      );
+      return;
+    }
+
     // Calculate distances for all zones
     const updatedZones = calculateZoneDistances(latitude, longitude);
     setZonesWithDistance(updatedZones);
@@ -265,6 +289,7 @@ export const useGeofencing = (
     permissionGranted,
     error,
     eventHistory,
+    isInsideCampus,
     startTracking,
     stopTracking,
     clearHistory,

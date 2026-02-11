@@ -26,6 +26,14 @@ export const CAMPUS_CENTER: [number, number] = [23.8103, 90.4125];
 export const DEFAULT_ZOOM = 17;
 
 /**
+ * Campus boundary radius in meters.
+ * A user must be within this distance from CAMPUS_CENTER to manually enter a zone.
+ * When the user moves outside this radius, they are automatically exited from
+ * any zone they were previously in.
+ */
+export const CAMPUS_RADIUS = 500;
+
+/**
  * Zone coordinate mappings
  * Key: Zone name (must match backend zone names exactly)
  * Value: Geographic coordinates and geofence radius
@@ -119,3 +127,21 @@ export const calculateDistance = (
 };
 
 const toRad = (deg: number): number => deg * (Math.PI / 180);
+
+/**
+ * Check whether a geographic point is within the UIU campus area.
+ * Uses the Haversine formula to compare distance from CAMPUS_CENTER
+ * against CAMPUS_RADIUS.
+ */
+export const isInCampusArea = (
+  latitude: number,
+  longitude: number,
+): boolean => {
+  const distance = calculateDistance(
+    latitude,
+    longitude,
+    CAMPUS_CENTER[0],
+    CAMPUS_CENTER[1],
+  );
+  return distance <= CAMPUS_RADIUS;
+};
