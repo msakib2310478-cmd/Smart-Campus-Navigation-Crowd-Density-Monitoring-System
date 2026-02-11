@@ -331,9 +331,7 @@ export const LiveMapPage: React.FC = () => {
                     >
                       {updatingZone === selectedZone.name + "ENTER"
                         ? "Entering Zone..."
-                        : !isInsideCampus
-                          ? "Enter Zone (Outside Campus)"
-                          : "Enter Zone"}
+                        : "Enter Zone"}
                     </button>
                     <button
                       onClick={() => handleUpdate(selectedZone.name, "EXIT")}
