@@ -19,11 +19,26 @@ public class Zone implements Serializable {
     private Set<String> activeUsers;
     private String crowdLevel;
 
+    /**
+     * Time Limit Value in seconds - estimated average stay duration.
+     * After this duration, users are automatically removed from the zone.
+     */
+    private long tlvSeconds;
+
     public Zone(String name, int capacity) {
         this.name = name;
         this.capacity = capacity;
         this.activeUsers = new HashSet<>();
         this.crowdLevel = "LOW";
+        this.tlvSeconds = 1800; // Default 30 minutes
+    }
+
+    public Zone(String name, int capacity, long tlvSeconds) {
+        this.name = name;
+        this.capacity = capacity;
+        this.activeUsers = new HashSet<>();
+        this.crowdLevel = "LOW";
+        this.tlvSeconds = tlvSeconds;
     }
 
     public int getCurrentCount() {
