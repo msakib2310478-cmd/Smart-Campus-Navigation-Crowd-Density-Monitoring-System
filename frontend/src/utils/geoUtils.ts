@@ -9,6 +9,95 @@ import { PolygonPoint } from "../types";
  */
 
 // ---------------------------------------------------------------------------
+// Bounding-Box types & helpers  (fast spatial pre-filter)
+// ---------------------------------------------------------------------------
+
+/**
+ * Axis-aligned bounding box in geographic coordinates.
+ *
+ * Used as a **cheap pre-filter** before expensive point-in-polygon
+ * (ray-casting) or Haversine distance checks.  A simple lat/lon
+ * comparison rejects the vast majority of zones (90%+) without
+ * any trigonometry.
+ */
+export interface BoundingBox {
+  minLat: number;
+  maxLat: number;
+  minLon: number;
+  maxLon: number;
+}
+
+/** Approximate meters-per-degree of latitude (constant everywhere). */
+const METERS_PER_DEG_LAT = 111_320;
+
+/**
+ * Compute the axis-aligned bounding box for a zone.
+ *
+ * - **Polygon zones**: the bbox is the min/max of all vertex coordinates.
+ * - **Circle zones**: the bbox is derived from the center ± radius,
+ *   converting meters → degrees (latitude is constant; longitude is
+ *   scaled by cos(latitude) to account for meridian convergence).
+ *
+ * @param zone - Must supply *either* a polygon (≥ 3 vertices) or a
+ *               center + radiusMeters.
+ * @returns The bounding box for the zone.
+ */
+export function computeBoundingBox(zone: {
+  polygon?: PolygonPoint[];
+  center: PolygonPoint;
+  radiusMeters: number;
+}): BoundingBox {
+  // Prefer polygon bounds when available
+  if (zone.polygon && zone.polygon.length >= 3) {
+    let minLat = Infinity;
+    let maxLat = -Infinity;
+    let minLon = Infinity;
+    let maxLon = -Infinity;
+    for (const v of zone.polygon) {
+      if (v.latitude < minLat) minLat = v.latitude;
+      if (v.latitude > maxLat) maxLat = v.latitude;
+      if (v.longitude < minLon) minLon = v.longitude;
+      if (v.longitude > maxLon) maxLon = v.longitude;
+    }
+    return { minLat, maxLat, minLon, maxLon };
+  }
+
+  // Circle zone: convert radius (meters) → degree offsets
+  const latOffset = zone.radiusMeters / METERS_PER_DEG_LAT;
+  const lonOffset =
+    zone.radiusMeters /
+    (METERS_PER_DEG_LAT * Math.cos((zone.center.latitude * Math.PI) / 180));
+
+  return {
+    minLat: zone.center.latitude - latOffset,
+    maxLat: zone.center.latitude + latOffset,
+    minLon: zone.center.longitude - lonOffset,
+    maxLon: zone.center.longitude + lonOffset,
+  };
+}
+
+/**
+ * Fast containment test: does the bounding box contain the given point?
+ *
+ * This is an O(1) check with four simple comparisons — no trigonometry,
+ * no square roots.  It is used as a **first-pass filter** so that only
+ * zones whose bbox overlaps the user's position go through the expensive
+ * precise check (Haversine or ray-casting).
+ *
+ * @param point - The point to test.
+ * @param bbox  - The bounding box to test against.
+ * @returns `true` if the point is inside (or on the edge of) the bbox.
+ */
+export function bboxContains(point: PolygonPoint, bbox: BoundingBox): boolean {
+  return (
+    point.latitude >= bbox.minLat &&
+    point.latitude <= bbox.maxLat &&
+    point.longitude >= bbox.minLon &&
+    point.longitude <= bbox.maxLon
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Point-in-Polygon  (Ray-Casting Algorithm)
 // ---------------------------------------------------------------------------
 
@@ -317,6 +406,8 @@ export interface FloorZone {
   latitude: number;
   longitude: number;
   radius: number;
+  /** Pre-computed bounding box for fast spatial rejection. */
+  boundingBox?: BoundingBox;
 }
 
 /**
@@ -384,6 +475,15 @@ export function detectZoneOnFloor<T extends FloorZone>(
   const floorZones = filterZonesByFloor(zones, floor, includeFloorless);
 
   for (const zone of floorZones) {
+    // --- Bounding-box fast reject ---
+    // If a pre-computed bbox exists, skip the expensive precise check when
+    // the point falls outside the bbox.  This rejects 90%+ of zones with
+    // four simple comparisons (no trig).
+    if (zone.boundingBox && !bboxContains(point, zone.boundingBox)) {
+      continue;
+    }
+
+    // --- Precise containment check (polygon ray-casting / Haversine) ---
     const inside = isInsideZone(point, {
       polygon: zone.polygon,
       center: { latitude: zone.latitude, longitude: zone.longitude },
