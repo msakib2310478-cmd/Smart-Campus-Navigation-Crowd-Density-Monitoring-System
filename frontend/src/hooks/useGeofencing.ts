@@ -10,7 +10,7 @@ import {
   calculateDistance,
   isInCampusArea,
 } from "../config/zoneCoordinates";
-import { BoundingBox, computeBoundingBox } from "../utils/geoUtils";
+import { BoundingBox, bboxContains, computeBoundingBox } from "../utils/geoUtils";
 
 /**
  * Geofence zone with distance information
@@ -180,10 +180,7 @@ export const useGeofencing = (
         const bbox = zoneBBoxes[name];
         if (
           bbox &&
-          (userLat < bbox.minLat ||
-            userLat > bbox.maxLat ||
-            userLng < bbox.minLon ||
-            userLng > bbox.maxLon)
+          !bboxContains({ latitude: userLat, longitude: userLng }, bbox)
         ) {
           return {
             name,
